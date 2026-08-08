@@ -21,9 +21,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
@@ -60,9 +60,9 @@ fun TimerFace(
     val isComplete = phase is TimerPhase.Complete
 
     var frameTick by remember { mutableIntStateOf(0) }
-    var elapsed by remember { mutableStateOf(0.0) }
+    var elapsed by remember { mutableDoubleStateOf(0.0) }
     var armProgress by remember { mutableFloatStateOf(1f) }
-    var scaleSec by remember { mutableStateOf(5.0) }
+    var scaleSec by remember { mutableDoubleStateOf(5.0) }
     val envelope = remember { FloatArray(ENVELOPE_BINS) }
     var startPulse by remember { mutableIntStateOf(0) }
 

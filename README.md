@@ -86,9 +86,17 @@ Revisit once platform 37 ships.
 
 ## Status
 
-Both modules compile and package; manifests verified (`foregroundServiceType`
-= microphone, standalone watch app, matching applicationIds). **Nothing has been
-run on hardware, and no live fire has been recorded through it.** The detector
+`./gradlew build` passes clean: both modules compile and package for debug and
+release, and Android Lint reports no issues on `:wear` or `:mobile`. Manifests
+verified against the packaged APKs (`foregroundServiceType` = microphone,
+standalone watch app, matching applicationIds, fully-qualified component names).
+
+The 10 remaining warnings on `:core` are all `GradleDependency` /
+`AndroidGradlePluginVersion` notices about the deliberate version pins described
+above. Taking any of them breaks the build until platform 37 ships.
+
+**Nothing has been run on hardware, and no live fire has been recorded
+through it.** The detector
 constants — clip-run length, blanking, the recoil window and threshold — are
 reasoned starting points, not measured ones. Expect to characterise them against
 your own gun and your own range.

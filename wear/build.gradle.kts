@@ -46,6 +46,7 @@ dependencies {
     implementation(libs.lifecycle.viewmodel)
     implementation(libs.lifecycle.service)
     implementation(libs.activity.compose)
+    implementation(libs.fragment)
 
     implementation(libs.compose.ui)
     implementation(libs.compose.graphics)

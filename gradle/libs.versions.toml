@@ -9,6 +9,7 @@ kotlin = "2.4.10"
 coreKtx = "1.18.0"
 lifecycle = "2.10.0"
 activityCompose = "1.13.0"
+fragment = "1.8.9"
 compose = "1.11.4"
 # 1.4.0 stable compiles MaterialExpressiveTheme / MotionScheme as `internal`,
 # so the Expressive API is not reachable there. alpha18 is the newest build that
@@ -32,6 +33,11 @@ lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-ru
 lifecycle-viewmodel       = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycle" }
 lifecycle-service         = { group = "androidx.lifecycle", name = "lifecycle-service", version.ref = "lifecycle" }
 activity-compose          = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+# Not used directly. Wear navigation drags in fragment 1.1.0 transitively, and
+# ActivityResult APIs are unsafe below 1.3.0 (older FragmentActivity skipped
+# super.onRequestPermissionsResult). Pinned forward so the mic permission
+# request is actually reliable.
+fragment                  = { group = "androidx.fragment", name = "fragment", version.ref = "fragment" }
 
 compose-ui                = { group = "androidx.compose.ui", name = "ui", version.ref = "compose" }
 compose-graphics          = { group = "androidx.compose.ui", name = "ui-graphics", version.ref = "compose" }

@@ -29,8 +29,11 @@
             android:name="com.google.android.wearable.standalone"
             android:value="true" />
 
+        <!-- Fully qualified: the namespace is com.carlb.split (shared with the
+             phone app so Play pairs them), but the code lives under .wear, so a
+             relative ".MainActivity" resolves to a class that does not exist. -->
         <activity
-            android:name=".MainActivity"
+            android:name="com.carlb.split.wear.MainActivity"
             android:exported="true"
             android:taskAffinity=""
             android:theme="@android:style/Theme.DeviceDefault">
@@ -41,7 +44,7 @@
         </activity>
 
         <service
-            android:name=".timer.TimerService"
+            android:name="com.carlb.split.wear.timer.TimerService"
             android:exported="false"
             android:foregroundServiceType="microphone" />
 
