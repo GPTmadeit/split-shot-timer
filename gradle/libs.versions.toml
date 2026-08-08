@@ -1,0 +1,64 @@
+# Versions here are not "latest" — they are the newest stable releases whose
+# AAR metadata still permits compileSdk 36 / AGP 8.13.2. Anything newer gates on
+# compileSdk 37, which is not published yet. Verified by reading
+# aar-metadata.properties out of each artifact, not by guessing.
+
+[versions]
+agp = "8.13.2"
+kotlin = "2.4.10"
+coreKtx = "1.18.0"
+lifecycle = "2.10.0"
+activityCompose = "1.13.0"
+compose = "1.11.4"
+# 1.4.0 stable compiles MaterialExpressiveTheme / MotionScheme as `internal`,
+# so the Expressive API is not reachable there. alpha18 is the newest build that
+# exposes it publicly AND still allows compileSdk 36. Revisit once 37 ships.
+material3 = "1.5.0-alpha18"
+wearCompose = "1.6.2"
+wearToolingPreview = "1.0.0"
+graphicsShapes = "1.1.0"
+playServicesWearable = "20.0.1"
+datastore = "1.2.1"
+serialization = "1.9.0"
+coroutines = "1.11.0"
+navigationCompose = "2.9.8"
+splashscreen = "1.2.0"
+
+[libraries]
+core-ktx                  = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+core-splashscreen         = { group = "androidx.core", name = "core-splashscreen", version.ref = "splashscreen" }
+lifecycle-runtime-ktx     = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
+lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }
+lifecycle-viewmodel       = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+lifecycle-service         = { group = "androidx.lifecycle", name = "lifecycle-service", version.ref = "lifecycle" }
+activity-compose          = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+
+compose-ui                = { group = "androidx.compose.ui", name = "ui", version.ref = "compose" }
+compose-graphics          = { group = "androidx.compose.ui", name = "ui-graphics", version.ref = "compose" }
+compose-tooling           = { group = "androidx.compose.ui", name = "ui-tooling", version.ref = "compose" }
+compose-tooling-preview   = { group = "androidx.compose.ui", name = "ui-tooling-preview", version.ref = "compose" }
+compose-foundation        = { group = "androidx.compose.foundation", name = "foundation", version.ref = "compose" }
+compose-animation         = { group = "androidx.compose.animation", name = "animation", version.ref = "compose" }
+material3                 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
+navigation-compose        = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
+graphics-shapes           = { group = "androidx.graphics", name = "graphics-shapes", version.ref = "graphicsShapes" }
+
+wear-compose-material3    = { group = "androidx.wear.compose", name = "compose-material3", version.ref = "wearCompose" }
+wear-compose-foundation   = { group = "androidx.wear.compose", name = "compose-foundation", version.ref = "wearCompose" }
+wear-compose-navigation   = { group = "androidx.wear.compose", name = "compose-navigation", version.ref = "wearCompose" }
+wear-compose-ui-tooling   = { group = "androidx.wear.compose", name = "compose-ui-tooling", version.ref = "wearCompose" }
+wear-tooling-preview      = { group = "androidx.wear", name = "wear-tooling-preview", version.ref = "wearToolingPreview" }
+
+play-services-wearable    = { group = "com.google.android.gms", name = "play-services-wearable", version.ref = "playServicesWearable" }
+
+datastore-preferences     = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
+kotlinx-serialization     = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
+kotlinx-coroutines        = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
+kotlinx-coroutines-play   = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "coroutines" }
+
+[plugins]
+android-application  = { id = "com.android.application", version.ref = "agp" }
+android-library      = { id = "com.android.library", version.ref = "agp" }
+kotlin-android       = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-compose       = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

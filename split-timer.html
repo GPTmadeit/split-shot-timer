@@ -1,0 +1,1085 @@
+<title>SPLIT &#8212; Shot Timer</title>
+<style>
+/* ============================================================
+   SPLIT &#183; shot timer
+   Palette: gunmetal ground, fiber-optic orange, brass, steel.
+   Night is the default instrument world; Daylight is a real
+   sunlight-readable mode, not an inversion.
+   ============================================================ */
+:root{
+  --ink:      #0A0D10;
+  --ink-2:    #10161C;
+  --panel:    #161E26;
+  --panel-2:  #1D2831;
+  --line:     #2A3742;
+  --steel:    #7B8892;
+  --steel-dim:#4C5862;
+  --bone:     #E9EDF1;
+  --hiviz:    #FF5A1F;
+  --hiviz-lo: #7A2A0E;
+  --brass:    #C89A2E;
+  --good:     #3FD48B;
+  --bad:      #FF4D4D;
+  --ring-track: rgba(123,136,146,.15);
+  --env:      rgba(123,136,146,.55);
+  --shadow:   0 18px 50px -20px rgba(0,0,0,.9);
+  --glow:     0 0 24px -2px rgba(255,90,31,.55);
+
+  --mono: ui-monospace, "SF Mono", "Roboto Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace;
+  --ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: light){
+  :root{
+    --ink:#E7EBEF; --ink-2:#DDE3E9; --panel:#F4F7F9; --panel-2:#E9EEF2;
+    --line:#C2CCD4; --steel:#5A6772; --steel-dim:#8B97A1; --bone:#0A0D10;
+    --hiviz:#D8410A; --hiviz-lo:#F5C9B6; --brass:#8A6A12;
+    --good:#12874F; --bad:#C41F1F;
+    --ring-track:rgba(90,103,114,.20); --env:rgba(90,103,114,.5);
+    --shadow:0 14px 40px -22px rgba(10,13,16,.55);
+    --glow:0 0 20px -4px rgba(216,65,10,.45);
+  }
+}
+:root[data-theme="light"]{
+  --ink:#E7EBEF; --ink-2:#DDE3E9; --panel:#F4F7F9; --panel-2:#E9EEF2;
+  --line:#C2CCD4; --steel:#5A6772; --steel-dim:#8B97A1; --bone:#0A0D10;
+  --hiviz:#D8410A; --hiviz-lo:#F5C9B6; --brass:#8A6A12;
+  --good:#12874F; --bad:#C41F1F;
+  --ring-track:rgba(90,103,114,.20); --env:rgba(90,103,114,.5);
+  --shadow:0 14px 40px -22px rgba(10,13,16,.55);
+  --glow:0 0 20px -4px rgba(216,65,10,.45);
+}
+:root[data-theme="dark"]{
+  --ink:#0A0D10; --ink-2:#10161C; --panel:#161E26; --panel-2:#1D2831;
+  --line:#2A3742; --steel:#7B8892; --steel-dim:#4C5862; --bone:#E9EDF1;
+  --hiviz:#FF5A1F; --hiviz-lo:#7A2A0E; --brass:#C89A2E;
+  --good:#3FD48B; --bad:#FF4D4D;
+  --ring-track:rgba(123,136,146,.15); --env:rgba(123,136,146,.55);
+  --shadow:0 18px 50px -20px rgba(0,0,0,.9);
+  --glow:0 0 24px -2px rgba(255,90,31,.55);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ink); color:var(--bone);
+  font-family:var(--ui); -webkit-font-smoothing:antialiased;
+  overscroll-behavior:none; touch-action:manipulation;
+}
+.wrap{max-width:520px; margin:0 auto; padding:14px 16px 120px; position:relative}
+
+/* ---------- utility type ---------- */
+.lbl{
+  font-size:10px; font-weight:700; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--steel);
+}
+.num{font-family:var(--mono); font-variant-numeric:tabular-nums; letter-spacing:-.02em}
+
+/* ---------- top bar ---------- */
+.top{display:flex; align-items:center; gap:10px; margin-bottom:14px}
+.brand{display:flex; align-items:baseline; gap:8px; flex:1; min-width:0}
+.brand b{font-size:15px; font-weight:800; letter-spacing:.22em}
+.brand span{font-size:10px; letter-spacing:.14em; color:var(--steel); text-transform:uppercase; white-space:nowrap}
+.iconbtn{
+  background:var(--panel); border:1px solid var(--line); color:var(--steel);
+  width:36px; height:36px; border-radius:10px; display:grid; place-items:center;
+  cursor:pointer; font-size:15px; flex:none; transition:.15s;
+}
+.iconbtn:hover{color:var(--bone); border-color:var(--steel-dim)}
+.iconbtn:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible{
+  outline:2px solid var(--hiviz); outline-offset:2px;
+}
+
+/* ---------- drill bar ---------- */
+.drillbar{
+  display:flex; align-items:center; gap:10px; background:var(--panel);
+  border:1px solid var(--line); border-radius:12px; padding:9px 12px; margin-bottom:16px;
+  cursor:pointer; width:100%; text-align:left; color:inherit; font:inherit;
+}
+.drillbar:hover{border-color:var(--steel-dim)}
+.drillbar .dn{font-size:14px; font-weight:650; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.pill{
+  font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.04em;
+  padding:3px 7px; border-radius:5px; background:var(--panel-2);
+  color:var(--steel); border:1px solid var(--line); white-space:nowrap;
+}
+.pill.on{background:var(--hiviz-lo); color:var(--hiviz); border-color:transparent}
+
+/* ---------- the face ---------- */
+.face{
+  position:relative; width:min(78vw,330px); aspect-ratio:1; margin:0 auto 4px;
+  display:grid; place-items:center;
+}
+.face canvas{position:absolute; inset:0; width:100%; height:100%}
+.readout{position:relative; text-align:center; z-index:2; pointer-events:none}
+.big{
+  font-family:var(--mono); font-weight:700; font-size:clamp(46px,17vw,74px);
+  line-height:.94; letter-spacing:-.045em; font-variant-numeric:tabular-nums;
+  transition:color .18s;
+}
+.big.dim{color:var(--steel-dim)}
+.big.hot{color:var(--hiviz)}
+.big .cs{font-size:.62em; letter-spacing:-.03em}
+.sub{margin-top:10px; display:flex; gap:14px; justify-content:center; align-items:baseline}
+.sub div{display:flex; flex-direction:column; align-items:center; gap:3px}
+.sub .v{font-family:var(--mono); font-size:15px; font-weight:650; font-variant-numeric:tabular-nums}
+.state{
+  margin-top:12px; font-size:10px; font-weight:800; letter-spacing:.2em;
+  text-transform:uppercase; color:var(--steel); min-height:13px;
+}
+.state.armed{color:var(--brass)}
+.state.run{color:var(--hiviz)}
+.flash{
+  position:absolute; inset:-6%; border-radius:50%; pointer-events:none; z-index:1;
+  background:radial-gradient(circle, rgba(255,90,31,.5), transparent 68%);
+  opacity:0;
+}
+.flash.go{animation:flash .5s ease-out}
+@keyframes flash{0%{opacity:1;transform:scale(.72)}100%{opacity:0;transform:scale(1.12)}}
+
+/* ---------- stats ---------- */
+.stats{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line);
+  border:1px solid var(--line); border-radius:12px; overflow:hidden; margin:18px 0 14px}
+.stat{background:var(--panel); padding:10px 8px; text-align:center}
+.stat .v{font-family:var(--mono); font-size:19px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1.15}
+.stat .v.sm{font-size:15px}
+.stat .lbl{margin-top:3px; font-size:9px}
+.stat.hl .v{color:var(--hiviz)}
+
+/* ---------- split strip ---------- */
+.splits{margin-bottom:16px}
+.splits-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px}
+.bars{display:flex; flex-direction:column; gap:4px; max-height:246px; overflow-y:auto; padding-right:2px}
+.bars::-webkit-scrollbar{width:4px}
+.bars::-webkit-scrollbar-thumb{background:var(--line); border-radius:2px}
+.row{display:grid; grid-template-columns:26px 1fr 52px; align-items:center; gap:8px; height:24px}
+.row .i{font-family:var(--mono); font-size:10px; color:var(--steel-dim); text-align:right; font-variant-numeric:tabular-nums}
+.track{height:16px; background:var(--panel); border-radius:4px; overflow:hidden; position:relative}
+.fill{
+  height:100%; background:var(--steel-dim); border-radius:4px;
+  transform-origin:left center; transform:scaleX(0);
+  animation:grow .42s cubic-bezier(.2,.9,.25,1) forwards;
+}
+.fill.best{background:var(--good)}
+.fill.worst{background:var(--bad)}
+.fill.first{background:var(--brass)}
+@keyframes grow{to{transform:scaleX(1)}}
+.row .t{font-family:var(--mono); font-size:12px; font-weight:650; text-align:right; font-variant-numeric:tabular-nums}
+.empty{
+  border:1px dashed var(--line); border-radius:10px; padding:22px 14px; text-align:center;
+  color:var(--steel-dim); font-size:12px; line-height:1.6;
+}
+
+/* ---------- action bar ---------- */
+.dock{
+  position:fixed; left:0; right:0; bottom:0; z-index:40;
+  background:linear-gradient(to top, var(--ink) 62%, transparent);
+  padding:16px 16px 18px; display:flex; justify-content:center;
+}
+.dock-in{width:100%; max-width:520px; display:flex; gap:10px}
+.go{
+  flex:1; height:56px; border:none; border-radius:14px; cursor:pointer;
+  font-family:var(--ui); font-size:14px; font-weight:800; letter-spacing:.18em;
+  text-transform:uppercase; background:var(--hiviz); color:#0A0D10;
+  box-shadow:var(--glow); transition:transform .1s, filter .15s;
+}
+.go:active{transform:scale(.975)}
+.go.stop{background:var(--panel-2); color:var(--bone); box-shadow:none; border:1px solid var(--line)}
+.go.armed{background:var(--brass); color:#0A0D10; box-shadow:none}
+.ghost{
+  width:56px; height:56px; border-radius:14px; background:var(--panel); border:1px solid var(--line);
+  color:var(--steel); font-size:18px; cursor:pointer; flex:none; display:grid; place-items:center;
+}
+.ghost:active{transform:scale(.96)}
+
+/* ---------- sheets ---------- */
+.scrim{position:fixed; inset:0; background:rgba(4,6,8,.72); z-index:50; opacity:0; pointer-events:none; transition:opacity .22s}
+.scrim.open{opacity:1; pointer-events:auto}
+.sheet{
+  position:fixed; left:0; right:0; bottom:0; z-index:51; max-height:86vh; overflow-y:auto;
+  background:var(--ink-2); border-top:1px solid var(--line);
+  border-radius:20px 20px 0 0; padding:8px 0 26px;
+  transform:translateY(102%); transition:transform .3s cubic-bezier(.2,.9,.25,1);
+  box-shadow:var(--shadow);
+}
+.sheet.open{transform:translateY(0)}
+.sheet-in{max-width:520px; margin:0 auto; padding:0 18px}
+.grab{width:36px; height:4px; background:var(--line); border-radius:2px; margin:6px auto 16px}
+.sheet h3{margin:0 0 4px; font-size:16px; font-weight:750; letter-spacing:-.01em}
+.sheet .hint{margin:0 0 18px; font-size:12px; color:var(--steel); line-height:1.55}
+
+/* drill cards */
+.drills{display:flex; flex-direction:column; gap:8px}
+.drill{
+  display:grid; grid-template-columns:1fr auto; gap:4px 12px; align-items:center;
+  background:var(--panel); border:1px solid var(--line); border-radius:12px;
+  padding:12px 14px; cursor:pointer; text-align:left; color:inherit; font:inherit; width:100%;
+  transition:border-color .15s, background .15s;
+}
+.drill:hover{border-color:var(--steel-dim)}
+.drill[aria-current="true"]{border-color:var(--hiviz); background:var(--panel-2)}
+.drill .n{font-size:14px; font-weight:650}
+.drill .d{grid-column:1; font-size:11px; color:var(--steel); line-height:1.5}
+.drill .m{grid-row:1/3; display:flex; flex-direction:column; align-items:flex-end; gap:4px}
+
+/* settings */
+.set{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 0; border-bottom:1px solid var(--line)}
+.set:last-of-type{border-bottom:none}
+.set .k{font-size:13px; font-weight:600}
+.set .k small{display:block; font-weight:400; font-size:11px; color:var(--steel); margin-top:3px; line-height:1.45}
+.set .c{flex:none; display:flex; align-items:center; gap:8px}
+select, input[type=number]{
+  background:var(--panel-2); border:1px solid var(--line); color:var(--bone);
+  border-radius:9px; padding:8px 10px; font-family:var(--mono); font-size:13px; min-width:74px;
+}
+input[type=range]{width:130px; accent-color:var(--hiviz)}
+.toggle{
+  width:46px; height:27px; border-radius:14px; background:var(--panel-2); border:1px solid var(--line);
+  position:relative; cursor:pointer; transition:background .18s; flex:none;
+}
+.toggle::after{
+  content:''; position:absolute; top:2px; left:2px; width:19px; height:19px; border-radius:50%;
+  background:var(--steel); transition:transform .2s cubic-bezier(.3,1.4,.5,1), background .18s;
+}
+.toggle[aria-pressed="true"]{background:var(--hiviz-lo); border-color:transparent}
+.toggle[aria-pressed="true"]::after{transform:translateX(19px); background:var(--hiviz)}
+
+/* mic meter */
+.meter{height:8px; background:var(--panel-2); border-radius:4px; overflow:hidden; position:relative; margin-top:10px}
+.meter i{position:absolute; inset:0 auto 0 0; width:0%; background:var(--steel); border-radius:4px; transition:width .05s linear}
+.meter i.clip{background:var(--hiviz)}
+.meter b{position:absolute; top:-3px; bottom:-3px; width:2px; background:var(--brass); left:50%}
+.mrow{display:flex; justify-content:space-between; margin-top:6px; font-family:var(--mono); font-size:10px; color:var(--steel-dim)}
+
+/* log */
+.logitem{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-bottom:8px}
+.logitem .h{display:flex; justify-content:space-between; align-items:baseline; gap:10px; margin-bottom:8px}
+.logitem .h .n{font-size:13px; font-weight:650}
+.logitem .h .dt{font-family:var(--mono); font-size:10px; color:var(--steel-dim)}
+.logitem .g{display:flex; gap:16px}
+.logitem .g div{display:flex; flex-direction:column; gap:2px}
+.logitem .g .v{font-family:var(--mono); font-size:14px; font-weight:650; font-variant-numeric:tabular-nums}
+
+/* hit factor */
+.hf{display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin:6px 0 16px}
+.hfz{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:9px 4px; text-align:center}
+.hfz .lbl{font-size:9px; margin-bottom:5px}
+.hfz button{
+  width:100%; background:var(--panel-2); border:1px solid var(--line); color:var(--bone);
+  border-radius:7px; padding:7px 0; font-family:var(--mono); font-size:15px; font-weight:700; cursor:pointer;
+}
+.hfz button:active{background:var(--hiviz-lo)}
+.hfout{display:flex; align-items:baseline; justify-content:space-between; padding:12px 14px;
+  background:var(--panel); border:1px solid var(--line); border-radius:12px}
+.hfout .v{font-family:var(--mono); font-size:26px; font-weight:750; color:var(--hiviz); font-variant-numeric:tabular-nums}
+
+.btnrow{display:flex; gap:8px; margin-top:18px}
+.btn{
+  flex:1; padding:13px; border-radius:11px; border:1px solid var(--line); background:var(--panel);
+  color:var(--bone); font-family:var(--ui); font-size:12px; font-weight:700; letter-spacing:.1em;
+  text-transform:uppercase; cursor:pointer;
+}
+.btn.primary{background:var(--hiviz); color:#0A0D10; border-color:transparent}
+.btn.danger{color:var(--bad)}
+
+.note{
+  margin-top:14px; padding:11px 13px; border-left:2px solid var(--brass);
+  background:var(--panel); font-size:11px; color:var(--steel); line-height:1.6; border-radius:0 8px 8px 0;
+}
+.verdict{
+  display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:12px;
+  margin-bottom:14px; font-size:13px; font-weight:650;
+}
+.verdict.pass{background:rgba(63,212,139,.11); color:var(--good); border:1px solid rgba(63,212,139,.3)}
+.verdict.fail{background:rgba(255,77,77,.1); color:var(--bad); border:1px solid rgba(255,77,77,.28)}
+.verdict .num{margin-left:auto; font-size:15px}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important; transition-duration:.01ms !important}
+  .fill{transform:scaleX(1)}
+}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div class="brand"><b>SPLIT</b><span id="srcTag">tap mode</span></div>
+    <button class="iconbtn" id="btnLog"    aria-label="Session log">&#9636;</button>
+    <button class="iconbtn" id="btnSet"    aria-label="Settings">&#9881;</button>
+    <button class="iconbtn" id="btnTheme"  aria-label="Toggle theme">&#9680;</button>
+  </div>
+
+  <button class="drillbar" id="drillBar">
+    <span class="dn" id="drillName">Freestyle</span>
+    <span class="pill" id="drillShots">&#8734; shots</span>
+    <span class="pill" id="drillPar">no par</span>
+  </button>
+
+  <div class="face" id="face">
+    <canvas id="ring"></canvas>
+    <div class="flash" id="flash"></div>
+    <div class="readout">
+      <div class="big dim num" id="big">&#8211;.<span class="cs">&#8211;&#8211;</span></div>
+      <div class="sub">
+        <div><span class="v num" id="subA">&#8211;.&#8211;&#8211;</span><span class="lbl">First</span></div>
+        <div><span class="v num" id="subB">&#8211;.&#8211;&#8211;</span><span class="lbl">Split</span></div>
+        <div><span class="v num" id="subC">0</span><span class="lbl">Shots</span></div>
+      </div>
+      <div class="state" id="stateTxt">Ready</div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat" id="stTotal"><div class="v num">&#8211;.&#8211;&#8211;</div><div class="lbl">Total</div></div>
+    <div class="stat" id="stFast"><div class="v num">&#8211;.&#8211;&#8211;</div><div class="lbl">Fastest</div></div>
+    <div class="stat" id="stSlow"><div class="v num">&#8211;.&#8211;&#8211;</div><div class="lbl">Slowest</div></div>
+    <div class="stat" id="stSd"><div class="v num sm">&#8211;.&#8211;&#8211;&#8211;</div><div class="lbl">Consist.</div></div>
+  </div>
+
+  <div class="splits">
+    <div class="splits-head">
+      <span class="lbl">Shot string</span>
+      <span class="lbl" id="scaleTag"></span>
+    </div>
+    <div class="bars" id="bars">
+      <div class="empty">No string recorded.<br>Hit <b>Start</b> &#8212; or tap the face to log shots by hand.</div>
+    </div>
+  </div>
+</div>
+
+<div class="dock">
+  <div class="dock-in">
+    <button class="go" id="goBtn">Start</button>
+    <button class="ghost" id="reviewBtn" aria-label="Score string">&#931;</button>
+  </div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+
+<!-- DRILLS -->
+<div class="sheet" id="sheetDrill" role="dialog" aria-label="Drills">
+  <div class="grab"></div>
+  <div class="sheet-in">
+    <h3>Drill</h3>
+    <p class="hint">Shot count and par are enforced &#8212; the string auto-stops on the last shot and grades against the standard.</p>
+    <div class="drills" id="drillList"></div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="sheet" id="sheetSet" role="dialog" aria-label="Settings">
+  <div class="grab"></div>
+  <div class="sheet-in">
+    <h3>Timer</h3>
+    <p class="hint">Calibrate sensitivity against live range noise before your first string.</p>
+
+    <div class="set">
+      <div class="k">Detection<small id="micState">Tap-only. Enable the mic to detect live fire.</small></div>
+      <div class="c"><button class="btn primary" id="micBtn" style="padding:9px 14px">Enable mic</button></div>
+    </div>
+
+    <div class="set" style="flex-direction:column; align-items:stretch; gap:0">
+      <div style="display:flex; justify-content:space-between; align-items:center">
+        <div class="k">Sensitivity<small>Drop it until range chatter stops triggering.</small></div>
+        <div class="c"><input type="range" id="sens" min="-52" max="-6" step="1" value="-22"></div>
+      </div>
+      <div class="meter"><i id="mLevel"></i><b id="mMark"></b></div>
+      <div class="mrow"><span>&#8722;60 dB</span><span id="sensTxt">threshold &#8722;22 dB</span><span>0 dB</span></div>
+    </div>
+
+    <div class="set">
+      <div class="k">Clip-gate<small>Require the mic to rail &#8212; rejects the bay next to you.</small></div>
+      <div class="c"><button class="toggle" id="tClip" aria-pressed="false"></button></div>
+    </div>
+
+    <div class="set">
+      <div class="k">Echo blanking<small>Dead time after each shot. Lower it for sub-.15 splits.</small></div>
+      <div class="c"><select id="blank">
+        <option value="40">40 ms</option><option value="60" selected>60 ms</option>
+        <option value="90">90 ms</option><option value="130">130 ms</option>
+      </select></div>
+    </div>
+
+    <div class="set">
+      <div class="k">Start delay<small>Randomised so you can't anticipate the beep.</small></div>
+      <div class="c"><select id="delay">
+        <option value="instant">Instant</option>
+        <option value="1-4" selected>Random 1&#8211;4 s</option>
+        <option value="2-5">Random 2&#8211;5 s</option>
+        <option value="3">Fixed 3 s</option>
+      </select></div>
+    </div>
+
+    <div class="set">
+      <div class="k">Start signal<small>Haptic carries through muffs better than the buzzer.</small></div>
+      <div class="c"><select id="sig">
+        <option value="both" selected>Beep + haptic</option>
+        <option value="beep">Beep only</option>
+        <option value="haptic">Haptic only</option>
+      </select></div>
+    </div>
+
+    <div class="set">
+      <div class="k">Par beep<small>Second tone at par time.</small></div>
+      <div class="c"><button class="toggle" id="tPar" aria-pressed="true"></button></div>
+    </div>
+
+    <div class="set">
+      <div class="k">Auto-repeat<small>Re-arms itself so you can run reps without touching it.</small></div>
+      <div class="c"><select id="rep">
+        <option value="0" selected>Off</option>
+        <option value="5">Every 5 s</option>
+        <option value="8">Every 8 s</option>
+        <option value="12">Every 12 s</option>
+      </select></div>
+    </div>
+
+    <div class="note" id="micNote">
+      Browsers apply AGC and noise suppression by default, which crushes gunshot transients. SPLIT requests them off &#8212; on a native Wear OS build you'd pin <b>AudioSource.UNPROCESSED</b> instead.
+    </div>
+
+    <div class="btnrow"><button class="btn" id="closeSet">Done</button></div>
+  </div>
+</div>
+
+<!-- LOG -->
+<div class="sheet" id="sheetLog" role="dialog" aria-label="Session log">
+  <div class="grab"></div>
+  <div class="sheet-in">
+    <h3>Session log</h3>
+    <p class="hint" id="logSummary">Nothing recorded yet.</p>
+    <div id="logList"></div>
+    <div class="btnrow">
+      <button class="btn" id="exportBtn">Export CSV</button>
+      <button class="btn danger" id="clearBtn">Clear</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCORE -->
+<div class="sheet" id="sheetScore" role="dialog" aria-label="Score string">
+  <div class="grab"></div>
+  <div class="sheet-in">
+    <h3>Score string</h3>
+    <p class="hint">Tap each zone as you score the target. Hit factor updates live.</p>
+    <div id="scoreVerdict"></div>
+    <div class="hf" id="hfZones"></div>
+    <div class="set" style="border:none; padding-top:0">
+      <div class="k">Power factor</div>
+      <div class="c"><select id="pf"><option value="minor" selected>Minor</option><option value="major">Major</option></select></div>
+    </div>
+    <div class="hfout"><span class="lbl">Hit factor</span><span class="v num" id="hfVal">0.00</span></div>
+    <div class="btnrow">
+      <button class="btn" id="hfReset">Reset</button>
+      <button class="btn primary" id="hfSave">Save to log</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* =========================================================================
+   DRILL LIBRARY
+   ========================================================================= */
+const DRILLS = [
+  {id:"free",  n:"Freestyle",         shots:0,  par:0,    d:"Open string. No shot cap, no par.", goal:null},
+  {id:"bill",  n:"Bill Drill",        shots:6,  par:2.00, d:"7 yd. Draw, six rounds, all A-zone.", goal:{first:1.50, split:0.20}},
+  {id:"moz",   n:"Failure to Stop",   shots:3,  par:2.50, d:"7 yd. Two body, one head.", goal:{first:1.30, split:0.30}},
+  {id:"fast",  n:"F.A.S.T.",          shots:6,  par:5.00, d:"Two on the 3\u00d75 card, reload, four on the 8\u2033 circle.", goal:{first:1.80, split:0.45}},
+  {id:"1r1",   n:"1\u2013Reload\u20131",        shots:2,  par:2.50, d:"One round, slide-lock reload, one round.", goal:{first:1.20, split:1.60}},
+  {id:"blake", n:"Blake Drill",       shots:6,  par:3.00, d:"Three targets, two rounds each, transitions on the clock.", goal:{first:1.50, split:0.30}},
+  {id:"elpz",  n:"El Presidente",     shots:12, par:10.0, d:"Three targets at 10 yd. Turn, 2 each, reload, 2 each.", goal:{first:2.00, split:0.35}},
+  {id:"casino",n:"Casino Drill",      shots:21, par:21.0, d:"21 rounds, two reloads, descending count 6-5-4-3-2-1.", goal:{first:1.60, split:0.40}},
+  {id:"dot",   n:"Dot Torture",       shots:5,  par:0,    d:"Accuracy standard. Timer counts, par is off.", goal:null}
+];
+
+/* =========================================================================
+   STATE
+   ========================================================================= */
+const S = {
+  phase:"idle",            // idle | armed | run | done
+  drill:DRILLS[0],
+  shots:[],                // seconds from beep
+  t0:0,                    // audioContext time of beep
+  scale:5,                 // ring window, seconds
+  armTimer:null, parTimer:null, repTimer:null, raf:null,
+  micOn:false, ctx:null, stream:null, node:null,
+  level:-100, clipping:false,
+  lastShotT:-99, envFast:0, floor:1e-4,
+  cfg:{ sens:-22, clipGate:false, blank:60, delay:"1-4", sig:"both", par:true, rep:0 },
+  log:[], score:{A:0,C:0,D:0,M:0,NS:0}, pf:"minor"
+};
+const BINS = 300;
+let env = new Float32Array(BINS);
+
+/* =========================================================================
+   HELPERS
+   ========================================================================= */
+const $ = id => document.getElementById(id);
+const fmt = (v,d=2) => (v==null||!isFinite(v)) ? "\u2013.\u2013\u2013" : v.toFixed(d);
+const now = () => S.ctx ? S.ctx.currentTime : performance.now()/1000;
+const buzz = p => { try{ navigator.vibrate && navigator.vibrate(p); }catch(e){} };
+const splits = () => S.shots.slice(1).map((t,i)=> t - S.shots[i]);
+
+function save(){ try{ localStorage.setItem("split.v1", JSON.stringify({log:S.log,cfg:S.cfg,drill:S.drill.id})); }catch(e){} }
+function load(){
+  try{
+    const r = JSON.parse(localStorage.getItem("split.v1")||"{}");
+    if(r.log) S.log = r.log;
+    if(r.cfg) Object.assign(S.cfg, r.cfg);
+    if(r.drill) S.drill = DRILLS.find(d=>d.id===r.drill) || DRILLS[0];
+  }catch(e){}
+}
+
+/* =========================================================================
+   RING \u2014 the bezel is the tape. Audio envelope draws inward,
+   shots burn orange ticks outward at their position in time.
+   ========================================================================= */
+const cv = $("ring"), cx = cv.getContext("2d");
+let W=0,H=0,DPR=1;
+function sizeRing(){
+  DPR = Math.min(devicePixelRatio||1, 2.5);
+  const r = cv.getBoundingClientRect();
+  W = r.width; H = r.height;
+  cv.width = W*DPR; cv.height = H*DPR;
+  cx.setTransform(DPR,0,0,DPR,0,0);
+}
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+function drawRing(elapsed, armFrac){
+  if(!W) return;
+  const c = W/2, R = W/2 - 16, band = 13;
+  cx.clearRect(0,0,W,H);
+  const A0 = -Math.PI/2;
+
+  // track
+  cx.beginPath(); cx.arc(c,c,R,0,Math.PI*2);
+  cx.strokeStyle = css("--ring-track"); cx.lineWidth = band; cx.stroke();
+
+  // tick marks \u2014 one per second of the current scale
+  const ticks = S.scale <= 5 ? 5 : (S.scale <= 10 ? 10 : S.scale/2);
+  cx.strokeStyle = css("--ring-track"); cx.lineWidth = 1;
+  for(let i=0;i<ticks;i++){
+    const a = A0 + (i/ticks)*Math.PI*2;
+    cx.beginPath();
+    cx.moveTo(c+Math.cos(a)*(R+band/2+3), c+Math.sin(a)*(R+band/2+3));
+    cx.lineTo(c+Math.cos(a)*(R+band/2+7), c+Math.sin(a)*(R+band/2+7));
+    cx.stroke();
+  }
+
+  // arming countdown \u2014 brass arc depleting
+  if(S.phase==="armed"){
+    cx.beginPath();
+    cx.arc(c,c,R, A0, A0 + Math.PI*2*armFrac);
+    cx.strokeStyle = css("--brass"); cx.lineWidth = band; cx.lineCap="butt"; cx.stroke();
+  }
+
+  // acoustic envelope, drawn inward from the band
+  if(S.phase==="run" || S.phase==="done"){
+    cx.strokeStyle = css("--env"); cx.lineWidth = (Math.PI*2*R/BINS)*0.9;
+    for(let i=0;i<BINS;i++){
+      const v = env[i]; if(v<=0.012) continue;
+      const a = A0 + (i/BINS)*Math.PI*2;
+      const r0 = R - band/2, r1 = r0 - Math.min(v,1)*26;
+      cx.beginPath();
+      cx.moveTo(c+Math.cos(a)*r0, c+Math.sin(a)*r0);
+      cx.lineTo(c+Math.cos(a)*r1, c+Math.sin(a)*r1);
+      cx.stroke();
+    }
+  }
+
+  // par arc, outboard
+  const par = S.drill.par;
+  if(par > 0 && (S.phase==="run"||S.phase==="done")){
+    const pa = Math.min(par/S.scale,1);
+    cx.beginPath(); cx.arc(c,c,R+band/2+10, A0, A0+Math.PI*2*pa);
+    cx.strokeStyle = elapsed>par ? css("--bad") : css("--brass");
+    cx.lineWidth = 2; cx.lineCap="round"; cx.stroke();
+  }
+
+  // shot ticks \u2014 the string, burned into the ring
+  const hz = css("--hiviz");
+  S.shots.forEach((t,i)=>{
+    const a = A0 + Math.min(t/S.scale,1)*Math.PI*2;
+    const age = elapsed - t;
+    const pop = age < 0.28 ? 1 + (1-age/0.28)*0.9 : 1;      // strike-in overshoot
+    const r0 = R - band/2 - 3, r1 = R + band/2 + 4*pop;
+    cx.save();
+    cx.shadowColor = hz; cx.shadowBlur = 12*pop;
+    cx.strokeStyle = hz; cx.lineWidth = 3; cx.lineCap="round";
+    cx.beginPath();
+    cx.moveTo(c+Math.cos(a)*r0, c+Math.sin(a)*r0);
+    cx.lineTo(c+Math.cos(a)*r1, c+Math.sin(a)*r1);
+    cx.stroke();
+    cx.restore();
+  });
+
+  // sweep head
+  if(S.phase==="run"){
+    const a = A0 + Math.min(elapsed/S.scale,1)*Math.PI*2;
+    cx.save();
+    cx.shadowColor = hz; cx.shadowBlur = 16;
+    cx.fillStyle = hz;
+    cx.beginPath(); cx.arc(c+Math.cos(a)*R, c+Math.sin(a)*R, 4.5, 0, Math.PI*2); cx.fill();
+    cx.restore();
+  }
+
+  // idle breathing + live input level
+  if(S.phase==="idle"){
+    const lv = Math.max(0, Math.min(1,(S.level+60)/60));
+    const b = 0.5 + 0.5*Math.sin(performance.now()/900);
+    cx.beginPath(); cx.arc(c,c,R, A0, A0 + Math.PI*2*(S.micOn ? lv : 0.06*b));
+    cx.strokeStyle = S.clipping ? css("--hiviz") : css("--steel-dim");
+    cx.lineWidth = band; cx.lineCap="round"; cx.stroke();
+  }
+}
+
+/* =========================================================================
+   AUDIO \u2014 capture, onset detection, tones
+   ========================================================================= */
+async function enableMic(){
+  try{
+    S.ctx = S.ctx || new (window.AudioContext||window.webkitAudioContext)();
+    await S.ctx.resume();
+    S.stream = await navigator.mediaDevices.getUserMedia({audio:{
+      echoCancellation:false, noiseSuppression:false, autoGainControl:false, channelCount:1
+    }});
+    const src = S.ctx.createMediaStreamSource(S.stream);
+    const n = S.ctx.createScriptProcessor(512, 1, 1);
+    n.onaudioprocess = e => processBlock(e.inputBuffer.getChannelData(0), e.playbackTime);
+    src.connect(n);
+    const mute = S.ctx.createGain(); mute.gain.value = 0;
+    n.connect(mute); mute.connect(S.ctx.destination);
+    S.node = n; S.micOn = true;
+    $("srcTag").textContent = Math.round(S.ctx.sampleRate/1000)+" kHz live";
+    $("micState").textContent = "Live at "+S.ctx.sampleRate+" Hz. Onset resolution "+(1000/S.ctx.sampleRate).toFixed(3)+" ms.";
+    $("micBtn").textContent = "Active"; $("micBtn").classList.remove("primary");
+  }catch(err){
+    S.micOn = false;
+    $("micState").textContent = "Mic blocked ("+(err.name||"error")+"). Tap the face to log shots by hand.";
+    $("micBtn").textContent = "Retry";
+  }
+}
+
+function processBlock(buf, blockTime){
+  const N = buf.length, sr = S.ctx.sampleRate;
+  const thresh = Math.pow(10, S.cfg.sens/20);
+  const blank = S.cfg.blank/1000;
+
+  // Pass 1 \u2014 block statistics. The clip run has to be known before onset
+  // detection, because the gate asks "did this transient rail the ADC?"
+  // and the answer lives in the samples *after* the leading edge.
+  let peak = 0, clipRun = 0, maxClip = 0;
+  for(let i=0;i<N;i++){
+    const a = Math.abs(buf[i]);
+    if(a > peak) peak = a;
+    if(a >= 0.985){ clipRun++; if(clipRun>maxClip) maxClip = clipRun; } else clipRun = 0;
+    S.floor += (a - S.floor) * (a > S.floor ? 0.00004 : 0.0004);  // slow ambient follower
+  }
+  S.level = 20*Math.log10(Math.max(peak,1e-6));
+  S.clipping = maxClip > 0;
+
+  // Pass 2 \u2014 onset detection
+  if(S.phase === "run" && peak >= thresh && peak >= S.floor*8 &&
+     !(S.cfg.clipGate && maxClip < 3)){
+    for(let i=0;i<N;i++){
+      const t = blockTime + i/sr;
+      if(t - S.lastShotT < blank) continue;
+      if(Math.abs(buf[i]) < thresh) continue;
+      S.lastShotT = t;
+      registerShot(t - S.t0);
+    }
+  }
+
+  if(S.phase === "run"){
+    const t = blockTime - S.t0;
+    const bin = Math.floor(Math.min(t/S.scale,0.9999)*BINS);
+    if(bin>=0 && bin<BINS && peak > env[bin]) env[bin] = peak;
+  }
+}
+
+function tone(freq, dur, at){
+  if(!S.ctx) return;
+  const t = at || S.ctx.currentTime;
+  const o = S.ctx.createOscillator(), g = S.ctx.createGain();
+  o.type = "square"; o.frequency.value = freq;
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(0.32, t+0.004);
+  g.gain.setValueAtTime(0.32, t+dur-0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+  o.connect(g); g.connect(S.ctx.destination);
+  o.start(t); o.stop(t+dur+0.02);
+}
+
+/* =========================================================================
+   RUN CONTROL
+   ========================================================================= */
+async function arm(){
+  clearTimeout(S.repTimer); clearTimeout(S.armTimer); clearTimeout(S.parTimer);
+  if(!S.ctx){
+    S.ctx = new (window.AudioContext||window.webkitAudioContext)();
+  }
+  await S.ctx.resume();
+
+  S.shots = []; env = new Float32Array(BINS);
+  S.scale = 5; S.lastShotT = -99;
+  S.phase = "armed";
+  paint(); renderBars();
+
+  const d = S.cfg.delay;
+  let wait = 0;
+  if(d === "1-4") wait = 1 + Math.random()*3;
+  else if(d === "2-5") wait = 2 + Math.random()*3;
+  else if(d === "3") wait = 3;
+  else wait = 0.25;
+
+  S.armStart = now(); S.armLen = wait;
+  buzz(18);
+  S.armTimer = setTimeout(go, wait*1000);
+}
+
+function go(){
+  S.t0 = now();
+  S.lastShotT = S.t0 - 0.02;
+  S.phase = "run";
+  if(S.cfg.sig !== "haptic") tone(2100, 0.32);
+  if(S.cfg.sig !== "beep") buzz([0,140]);
+  const f = $("flash"); f.classList.remove("go"); void f.offsetWidth; f.classList.add("go");
+  paint();
+
+  if(S.cfg.par && S.drill.par > 0){
+    S.parTimer = setTimeout(()=>{
+      if(S.phase!=="run") return;
+      tone(1400, 0.20); buzz([0,60,50,60]);
+    }, S.drill.par*1000);
+  }
+}
+
+function registerShot(t){
+  if(t < 0.02) return;
+  S.shots.push(t);
+  // Ring auto-scales; fold the envelope into the first half so the trace
+  // keeps lining up with the shot ticks after a rescale.
+  while(t > S.scale){
+    S.scale *= 2;
+    const half = new Float32Array(BINS);
+    for(let i=0;i<BINS;i++){
+      const j = Math.floor(i/2);
+      if(env[i] > half[j]) half[j] = env[i];
+    }
+    env = half;
+  }
+  buzz(8);
+  if(S.drill.shots > 0 && S.shots.length >= S.drill.shots){
+    setTimeout(stop, 120);
+  }
+  renderBars();
+}
+
+function stop(){
+  clearTimeout(S.armTimer); clearTimeout(S.parTimer);
+  if(S.phase === "run" && S.shots.length){
+    S.phase = "done";
+    commit();
+    if(S.cfg.rep > 0){
+      const g = S.drill.goal, sp = splits();
+      const pass = !g || (S.shots[0] <= g.first && (!sp.length || Math.max(...sp) <= g.split));
+      buzz(pass ? [0,50,60,50] : [0,220]);
+      S.repTimer = setTimeout(()=>{ if(S.phase==="done") arm(); }, S.cfg.rep*1000);
+    }
+  } else {
+    S.phase = S.shots.length ? "done" : "idle";
+  }
+  paint(); renderBars();
+}
+
+function commit(){
+  const sp = splits();
+  S.log.unshift({
+    ts: Date.now(), drill: S.drill.n, drillId: S.drill.id,
+    shots: S.shots.map(v=>+v.toFixed(3)),
+    first: +S.shots[0].toFixed(2),
+    total: +S.shots[S.shots.length-1].toFixed(2),
+    n: S.shots.length,
+    fast: sp.length ? +Math.min(...sp).toFixed(2) : null,
+    slow: sp.length ? +Math.max(...sp).toFixed(2) : null,
+    hf: null
+  });
+  S.log = S.log.slice(0,200);
+  save(); renderLog();
+}
+
+function reset(){
+  clearTimeout(S.armTimer); clearTimeout(S.parTimer); clearTimeout(S.repTimer);
+  S.phase="idle"; S.shots=[]; env=new Float32Array(BINS); S.scale=5;
+  S.score={A:0,C:0,D:0,M:0,NS:0};
+  paint(); renderBars(); renderScore();
+}
+
+/* =========================================================================
+   RENDER
+   ========================================================================= */
+function paint(){
+  const el = elapsed();
+  const b = $("big"), st = $("stateTxt"), go = $("goBtn");
+
+  if(S.phase === "armed"){
+    b.textContent = "\u2013.\u2013\u2013"; b.className = "big dim num";
+    st.textContent = "Standby"; st.className = "state armed";
+    go.textContent = "Cancel"; go.className = "go armed";
+  } else if(S.phase === "run"){
+    b.innerHTML = Math.floor(el) + ".<span class='cs'>" + String(Math.floor((el%1)*100)).padStart(2,"0") + "</span>";
+    b.className = "big hot num";
+    st.textContent = "Running"; st.className = "state run";
+    go.textContent = "Stop"; go.className = "go stop";
+  } else if(S.phase === "done"){
+    const t = S.shots.length ? S.shots[S.shots.length-1] : 0;
+    b.innerHTML = Math.floor(t) + ".<span class='cs'>" + String(Math.round((t%1)*100)).padStart(2,"0") + "</span>";
+    b.className = "big num";
+    st.textContent = S.cfg.rep>0 ? "Re-arming\u2026" : "String complete";
+    st.className = "state";
+    go.textContent = "Start"; go.className = "go";
+  } else {
+    b.innerHTML = "\u2013.<span class='cs'>\u2013\u2013</span>"; b.className = "big dim num";
+    st.textContent = S.micOn ? "Ready \u00b7 mic live" : "Ready \u00b7 tap mode";
+    st.className = "state";
+    go.textContent = "Start"; go.className = "go";
+  }
+
+  const sp = splits();
+  $("subA").textContent = S.shots.length ? fmt(S.shots[0]) : "\u2013.\u2013\u2013";
+  $("subB").textContent = S.phase==="run" && S.shots.length
+      ? fmt(el - S.shots[S.shots.length-1])
+      : (sp.length ? fmt(sp[sp.length-1]) : "\u2013.\u2013\u2013");
+  $("subC").textContent = S.shots.length + (S.drill.shots ? "/"+S.drill.shots : "");
+
+  const total = S.shots.length ? S.shots[S.shots.length-1] : null;
+  $("stTotal").querySelector(".v").textContent = fmt(total);
+  $("stFast").querySelector(".v").textContent  = sp.length ? fmt(Math.min(...sp)) : "\u2013.\u2013\u2013";
+  $("stSlow").querySelector(".v").textContent  = sp.length ? fmt(Math.max(...sp)) : "\u2013.\u2013\u2013";
+  const sd = sp.length > 1 ? Math.sqrt(sp.reduce((a,v)=>a+(v-sp.reduce((x,y)=>x+y,0)/sp.length)**2,0)/sp.length) : null;
+  $("stSd").querySelector(".v").textContent = sd==null ? "\u2013.\u2013\u2013\u2013" : "\u00b1"+sd.toFixed(3);
+  $("stTotal").classList.toggle("hl", S.drill.par>0 && total!=null && total<=S.drill.par);
+  $("scaleTag").textContent = S.shots.length ? S.scale+" s ring" : "";
+}
+
+function elapsed(){
+  if(S.phase === "run") return Math.max(0, now() - S.t0);
+  if(S.phase === "done" && S.shots.length) return S.shots[S.shots.length-1];
+  return 0;
+}
+
+function renderBars(){
+  const box = $("bars"), sp = splits();
+  if(!S.shots.length){
+    box.innerHTML = '<div class="empty">No string recorded.<br>Hit <b>Start</b> \u2014 or tap the face to log shots by hand.</div>';
+    return;
+  }
+  const mn = sp.length ? Math.min(...sp) : 0, mx = sp.length ? Math.max(...sp) : 1;
+  const peak = Math.max(S.shots[0], mx, 0.2);
+  let h = "";
+  S.shots.forEach((t,i)=>{
+    const v = i===0 ? t : sp[i-1];
+    let cls = i===0 ? "first" : (sp.length>1 && v===mn ? "best" : (sp.length>1 && v===mx ? "worst" : ""));
+    h += `<div class="row"><span class="i">${i===0?"DRAW":i+1}</span>`
+      +  `<span class="track"><span class="fill ${cls}" style="width:${Math.max(3,(v/peak)*100)}%;animation-delay:${i*32}ms"></span></span>`
+      +  `<span class="t">${fmt(v)}</span></div>`;
+  });
+  box.innerHTML = h;
+}
+
+function renderDrills(){
+  $("drillName").textContent = S.drill.n;
+  $("drillShots").textContent = S.drill.shots ? S.drill.shots+" shots" : "\u221e shots";
+  const p = $("drillPar");
+  p.textContent = S.drill.par ? "par "+S.drill.par.toFixed(2) : "no par";
+  p.className = "pill" + (S.drill.par ? " on" : "");
+
+  $("drillList").innerHTML = DRILLS.map(d=>
+    `<button class="drill" data-id="${d.id}" aria-current="${d.id===S.drill.id}">
+       <span class="n">${d.n}</span>
+       <span class="m"><span class="pill">${d.shots?d.shots+" shots":"\u221e"}</span>
+       <span class="pill${d.par?" on":""}">${d.par?"par "+d.par.toFixed(2):"no par"}</span></span>
+       <span class="d">${d.d}</span>
+     </button>`).join("");
+  $("drillList").querySelectorAll(".drill").forEach(b=>{
+    b.onclick = ()=>{
+      S.drill = DRILLS.find(x=>x.id===b.dataset.id);
+      save(); renderDrills(); reset(); closeSheets();
+    };
+  });
+}
+
+function renderLog(){
+  const L = S.log;
+  if(!L.length){
+    $("logList").innerHTML = '<div class="empty">No strings yet.</div>';
+    $("logSummary").textContent = "Nothing recorded yet.";
+    return;
+  }
+  const firsts = L.filter(r=>r.first!=null).map(r=>r.first);
+  const avg = firsts.reduce((a,b)=>a+b,0)/firsts.length;
+  const best = Math.min(...firsts);
+  $("logSummary").textContent =
+    `${L.length} string${L.length===1?"":"s"} \u00b7 avg draw ${avg.toFixed(2)} s \u00b7 best draw ${best.toFixed(2)} s`;
+  $("logList").innerHTML = L.slice(0,40).map(r=>{
+    const d = new Date(r.ts);
+    return `<div class="logitem">
+      <div class="h"><span class="n">${r.drill}</span>
+        <span class="dt">${d.toLocaleDateString(undefined,{month:"short",day:"numeric"})} ${d.toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit"})}</span></div>
+      <div class="g">
+        <div><span class="v">${fmt(r.first)}</span><span class="lbl">Draw</span></div>
+        <div><span class="v">${fmt(r.total)}</span><span class="lbl">Total</span></div>
+        <div><span class="v">${r.n}</span><span class="lbl">Shots</span></div>
+        <div><span class="v">${r.fast!=null?fmt(r.fast):"\u2013.\u2013\u2013"}</span><span class="lbl">Fastest</span></div>
+        ${r.hf!=null?`<div><span class="v" style="color:var(--hiviz)">${r.hf.toFixed(2)}</span><span class="lbl">HF</span></div>`:""}
+      </div></div>`;
+  }).join("");
+}
+
+/* =========================================================================
+   SCORING \u2014 USPSA hit factor
+   ========================================================================= */
+const PTS = { minor:{A:5,C:3,D:1,M:-10,NS:-10}, major:{A:5,C:4,D:2,M:-10,NS:-10} };
+function renderScore(){
+  $("hfZones").innerHTML = Object.keys(S.score).map(z=>
+    `<div class="hfz"><div class="lbl">${z}</div><button data-z="${z}">${S.score[z]}</button></div>`).join("");
+  $("hfZones").querySelectorAll("button").forEach(b=>{
+    b.onclick = e => {
+      const z = b.dataset.z;
+      S.score[z] = e.shiftKey ? Math.max(0,S.score[z]-1) : S.score[z]+1;
+      renderScore();
+    };
+    b.oncontextmenu = e => { e.preventDefault(); S.score[b.dataset.z]=Math.max(0,S.score[b.dataset.z]-1); renderScore(); };
+  });
+  const p = PTS[S.pf];
+  const pts = Object.keys(S.score).reduce((a,z)=>a+S.score[z]*p[z],0);
+  const t = S.shots.length ? S.shots[S.shots.length-1] : 0;
+  const hf = t>0 ? Math.max(0,pts)/t : 0;
+  $("hfVal").textContent = hf.toFixed(2);
+
+  // drill verdict
+  const g = S.drill.goal, sp = splits(), box = $("scoreVerdict");
+  if(!g || !S.shots.length){ box.innerHTML = ""; return; }
+  const total = S.shots[S.shots.length-1];
+  const okPar = !S.drill.par || total <= S.drill.par;
+  const okDraw = S.shots[0] <= g.first;
+  const pass = okPar && okDraw;
+  box.innerHTML = `<div class="verdict ${pass?"pass":"fail"}">
+      <span>${pass?"Standard met":"Over standard"}</span>
+      <span class="num">${total.toFixed(2)}${S.drill.par?" / "+S.drill.par.toFixed(2):""}</span></div>`;
+}
+
+/* =========================================================================
+   SHEETS
+   ========================================================================= */
+const sheets = ["sheetDrill","sheetSet","sheetLog","sheetScore"];
+function openSheet(id){
+  closeSheets(); $(id).classList.add("open"); $("scrim").classList.add("open");
+}
+function closeSheets(){
+  sheets.forEach(s=>$(s).classList.remove("open")); $("scrim").classList.remove("open");
+}
+$("scrim").onclick = closeSheets;
+$("drillBar").onclick = ()=>openSheet("sheetDrill");
+$("btnSet").onclick   = ()=>openSheet("sheetSet");
+$("btnLog").onclick   = ()=>{ renderLog(); openSheet("sheetLog"); };
+$("reviewBtn").onclick= ()=>{ renderScore(); openSheet("sheetScore"); };
+$("closeSet").onclick = closeSheets;
+
+/* =========================================================================
+   CONTROLS
+   ========================================================================= */
+$("goBtn").onclick = ()=>{
+  if(S.phase === "idle" || S.phase === "done"){ clearTimeout(S.repTimer); arm(); }
+  else if(S.phase === "armed"){ clearTimeout(S.armTimer); reset(); }
+  else stop();
+};
+$("micBtn").onclick = enableMic;
+
+$("face").addEventListener("pointerdown", ()=>{
+  if(S.phase === "run") registerShot(now() - S.t0);
+});
+addEventListener("keydown", e=>{
+  if(e.code === "Space"){
+    e.preventDefault();
+    if(S.phase === "run") registerShot(now() - S.t0);
+    else $("goBtn").click();
+  }
+  if(e.code === "Escape") closeSheets();
+});
+
+$("sens").oninput = e=>{
+  S.cfg.sens = +e.target.value;
+  $("sensTxt").textContent = "threshold "+S.cfg.sens+" dB";
+  $("mMark").style.left = ((S.cfg.sens+60)/60*100)+"%";
+  save();
+};
+$("blank").onchange = e=>{ S.cfg.blank = +e.target.value; save(); };
+$("delay").onchange = e=>{ S.cfg.delay = e.target.value; save(); };
+$("sig").onchange   = e=>{ S.cfg.sig = e.target.value; save(); };
+$("rep").onchange   = e=>{ S.cfg.rep = +e.target.value; save(); };
+$("pf").onchange    = e=>{ S.pf = e.target.value; renderScore(); };
+
+function bindToggle(id, key){
+  const el = $(id);
+  el.onclick = ()=>{ S.cfg[key] = !S.cfg[key]; el.setAttribute("aria-pressed", S.cfg[key]); save(); };
+}
+bindToggle("tClip","clipGate");
+bindToggle("tPar","par");
+
+$("hfReset").onclick = ()=>{ S.score={A:0,C:0,D:0,M:0,NS:0}; renderScore(); };
+$("hfSave").onclick = ()=>{
+  if(S.log.length){ S.log[0].hf = +$("hfVal").textContent; save(); renderLog(); }
+  closeSheets();
+};
+$("clearBtn").onclick = ()=>{ S.log = []; save(); renderLog(); };
+$("exportBtn").onclick = ()=>{
+  const rows = [["timestamp","drill","shots","draw","total","fastest_split","slowest_split","hit_factor","splits"]];
+  S.log.forEach(r=>rows.push([new Date(r.ts).toISOString(), r.drill, r.n, r.first, r.total,
+    r.fast??"", r.slow??"", r.hf??"", r.shots.join(" ")]));
+  const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download = "split-log.csv"; a.click();
+};
+
+$("btnTheme").onclick = ()=>{
+  const cur = document.documentElement.getAttribute("data-theme");
+  const dark = cur ? cur==="dark"
+    : matchMedia("(prefers-color-scheme: dark)").matches;
+  document.documentElement.setAttribute("data-theme", dark ? "light" : "dark");
+};
+
+/* =========================================================================
+   LOOP
+   ========================================================================= */
+function frame(){
+  const el = elapsed();
+  let armFrac = 0;
+  if(S.phase === "armed"){
+    armFrac = Math.max(0, 1 - (now() - S.armStart)/S.armLen);
+  }
+  if(S.phase === "run") paint();
+  if(S.micOn){
+    const pct = Math.max(0, Math.min(100, (S.level+60)/60*100));
+    const m = $("mLevel"); m.style.width = pct+"%";
+    m.classList.toggle("clip", S.clipping);
+  }
+  drawRing(el, armFrac);
+  S.raf = requestAnimationFrame(frame);
+}
+
+/* =========================================================================
+   BOOT
+   ========================================================================= */
+load();
+$("sens").value = S.cfg.sens;
+$("sensTxt").textContent = "threshold "+S.cfg.sens+" dB";
+$("mMark").style.left = ((S.cfg.sens+60)/60*100)+"%";
+$("blank").value = S.cfg.blank; $("delay").value = S.cfg.delay;
+$("sig").value = S.cfg.sig; $("rep").value = S.cfg.rep;
+$("tClip").setAttribute("aria-pressed", S.cfg.clipGate);
+$("tPar").setAttribute("aria-pressed", S.cfg.par);
+
+sizeRing(); addEventListener("resize", sizeRing);
+renderDrills(); renderLog(); renderScore(); paint(); renderBars();
+frame();
+</script>
