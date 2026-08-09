@@ -5,6 +5,7 @@ build/
 captures/
 *.apk
 *.aab
+release-assets/
 *.ap_
 *.dex
 local.properties
