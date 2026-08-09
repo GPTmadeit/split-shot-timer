@@ -1,0 +1,76 @@
+name: Bug report
+description: Something behaves incorrectly
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing. If the bug is about **shots being missed or double-counted**,
+        please use the "Detection accuracy" template instead — it asks for the specific
+        details needed to diagnose that.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What did you observe, and what did you expect instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the watch app
+        2. Select Bill Drill
+        3. Press Start
+        4. ...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where does this happen?
+      options:
+        - Watch app
+        - Phone app
+        - Browser prototype (docs/index.html)
+        - Build / tooling
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Release tag, or commit SHA if you built from source.
+      placeholder: v0.2.0
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: Device and OS
+      placeholder: Pixel Watch 4 (Wear OS 6) / Pixel 9 (Android 16)
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: '`adb logcat` output if you have it. This is rendered as code, no backticks needed.'
+      render: text
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues for a duplicate.
+          required: true
+        - label: My logs contain no personal information.
+          required: true

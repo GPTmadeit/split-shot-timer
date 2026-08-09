@@ -1,0 +1,63 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to build and attach artifacts to'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Build and publish artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v5
+      - uses: gradle/actions/wrapper-validation@v5
+
+      # Never ship a tag that does not pass its own gate.
+      - name: Verify
+        run: ./gradlew testDebugUnitTest lintDebug --stacktrace
+
+      - name: Assemble
+        run: ./gradlew :wear:assembleDebug :mobile:assembleDebug --stacktrace
+
+      - name: Stage artifacts
+        id: stage
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          [ -n "${{ github.event.inputs.tag }}" ] && version="${{ github.event.inputs.tag }}" && version="${version#v}"
+          mkdir -p dist
+          cp wear/build/outputs/apk/debug/wear-debug.apk    "dist/split-wear-v$version-debug.apk"
+          cp mobile/build/outputs/apk/debug/mobile-debug.apk "dist/split-mobile-v$version-debug.apk"
+          ( cd dist && sha256sum *.apk > SHA256SUMS.txt )
+          cat dist/SHA256SUMS.txt
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Attach to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          files: |
+            dist/*.apk
+            dist/SHA256SUMS.txt
+          fail_on_unmatched_files: true

@@ -1,0 +1,87 @@
+name: Detection accuracy
+description: Shots missed, double-counted, or someone else's shots registered
+labels: [detection, needs-data]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The detector constants shipped in this project are **reasoned estimates, not
+        measured values** — nothing has been characterised against live fire yet.
+        Reports here are the main way that changes, so thank you.
+
+        Please do not attach audio recorded at a range where others have not consented
+        to being recorded.
+
+  - type: dropdown
+    id: symptom
+    attributes:
+      label: Symptom
+      options:
+        - Missed shots (fewer detected than fired)
+        - Extra shots (more detected than fired)
+        - Neighbouring shooter registered as mine
+        - Start tone counted as the first shot
+        - Timing looks wrong (shots detected, times implausible)
+    validations:
+      required: true
+
+  - type: input
+    id: fired
+    attributes:
+      label: Rounds fired vs. rounds detected
+      placeholder: fired 6, detected 4
+    validations:
+      required: true
+
+  - type: input
+    id: firearm
+    attributes:
+      label: Firearm, calibre, and whether suppressed
+      description: Suppressed hosts sit near or below the microphone's clipping point, which changes everything about detection.
+      placeholder: Glock 34, 9mm, unsuppressed
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      options:
+        - Outdoor range
+        - Indoor range (heavy reverb)
+        - Covered bay
+    validations:
+      required: true
+
+  - type: input
+    id: neighbours
+    attributes:
+      label: Other shooters nearby?
+      placeholder: two bays over, actively firing
+
+  - type: textarea
+    id: settings
+    attributes:
+      label: Timer settings
+      description: Sensitivity, clip gate, recoil gate, echo blanking, drill.
+      placeholder: |
+        Sensitivity: -22 dB
+        Clip gate: on
+        Recoil gate: off
+        Blanking: 60 ms
+        Drill: Bill Drill
+    validations:
+      required: true
+
+  - type: input
+    id: wrist
+    attributes:
+      label: Which wrist, and one- or two-handed?
+      description: Only relevant if the recoil gate was on — transfer depends heavily on grip.
+      placeholder: watch on support hand, two-handed grip
+
+  - type: input
+    id: source
+    attributes:
+      label: Audio source reported in Settings
+      placeholder: UNPROCESSED @ 48000 Hz

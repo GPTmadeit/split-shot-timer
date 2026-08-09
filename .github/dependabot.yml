@@ -1,0 +1,45 @@
+version: 2
+
+updates:
+  # Gradle dependencies are pinned deliberately: anything newer than the current
+  # pins requires compileSdk 37, which is not published yet (see README).
+  # Dependabot therefore opens PRs but they are expected to fail CI until the
+  # platform ships — which is exactly the signal we want, rather than silence.
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+    open-pull-requests-limit: 5
+    labels: [dependencies]
+    commit-message:
+      prefix: 'deps'
+    groups:
+      androidx-compose:
+        patterns:
+          - 'androidx.compose*'
+          - 'androidx.wear.compose*'
+      androidx-other:
+        patterns:
+          - 'androidx.*'
+        exclude-patterns:
+          - 'androidx.compose*'
+          - 'androidx.wear.compose*'
+      kotlin:
+        patterns:
+          - 'org.jetbrains.kotlin*'
+          - 'org.jetbrains.kotlinx*'
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+    labels: [dependencies, ci]
+    commit-message:
+      prefix: 'ci'
+    groups:
+      actions:
+        patterns: ['*']

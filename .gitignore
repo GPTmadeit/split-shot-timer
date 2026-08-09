@@ -1,21 +1,64 @@
-# Gradle / Android build output
+# ---------------------------------------------------------------------------
+# Secrets and signing material — never commit these.
+# Android release signing in particular is a common leak: a committed .jks plus
+# a gradle.properties holding its password lets anyone ship an update that
+# Play will accept as genuine.
+# ---------------------------------------------------------------------------
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.key
+*.cer
+*.der
+keystore.properties
+signing.properties
+google-services.json
+play-service-account*.json
+*service-account*.json
+.env
+.env.*
+!.env.example
+secrets.properties
+local.properties
+
+# ---------------------------------------------------------------------------
+# Build output
+# ---------------------------------------------------------------------------
 build/
 .gradle/
 .cxx/
+.kotlin/
 captures/
+out/
+release-assets/
 *.apk
 *.aab
-release-assets/
 *.ap_
+*.aar
 *.dex
-local.properties
+*.class
+*.hprof
+lint-results*.html
+lint-results*.xml
 
-# IDE
+# ---------------------------------------------------------------------------
+# IDE / tooling
+# ---------------------------------------------------------------------------
 .idea/
 *.iml
+*.ipr
+*.iws
+.vscode/
 .claude/
+.fleet/
 
-# OS
+# ---------------------------------------------------------------------------
+# OS noise
+# ---------------------------------------------------------------------------
 .DS_Store
+._*
 Thumbs.db
 desktop.ini
+$RECYCLE.BIN/

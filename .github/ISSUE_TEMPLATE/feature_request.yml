@@ -1,0 +1,37 @@
+name: Feature request
+description: Suggest a capability or a drill
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the situation at the range, not the implementation.
+      placeholder: When running a classifier I have to remember the shot count myself because...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like it to do?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where would this live?
+      options:
+        - Watch app
+        - Phone app
+        - Both
+        - Browser prototype
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: How do you work around it today?

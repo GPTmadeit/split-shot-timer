@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or usage help
+    url: https://github.com/GPTmadeit/split-shot-timer/discussions
+    about: Ask about setup, calibration, or how something works.
+  - name: Security vulnerability
+    url: https://github.com/GPTmadeit/split-shot-timer/security/advisories/new
+    about: Report privately. Please do not open a public issue.
+  - name: Try the browser prototype
+    url: https://gptmadeit.github.io/split-shot-timer/
+    about: Reproduce UI behaviour without installing anything.
