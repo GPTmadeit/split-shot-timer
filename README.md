@@ -30,6 +30,8 @@ so the shooter in the next bay does not end up in your string.
 The watch is the instrument and the system of record. The phone is a durable replica for review
 and analysis. Neither depends on the other to function.
 
+<a id="why-it-works-at-all"></a>
+
 ## Why a watch microphone can do this at all
 
 This is the question that decides whether the project is possible, so it is worth stating plainly.
