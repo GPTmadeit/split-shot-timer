@@ -13,8 +13,9 @@ android {
         applicationId = "com.carlb.split"
         minSdk = 29
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        // Must increase on every published build or devices reject the upgrade.
+        versionCode = 2
+        versionName = "0.2.0"
     }
 
     buildTypes {
