@@ -28,23 +28,30 @@ object LiveBus {
     fun push(e: LiveEvent) {
         _state.value = when (e) {
             is LiveEvent.Armed -> LiveMirror.Standby(e.drillId)
+
             is LiveEvent.Started -> LiveMirror.Running(e.drillId, e.startedAtEpochMs, emptyList())
+
             is LiveEvent.Shot -> {
                 val cur = _state.value
                 if (cur is LiveMirror.Running) cur.copy(shots = cur.shots + e.atSec) else cur
             }
+
             is LiveEvent.Ended -> LiveMirror.Settling(e.stringId)
+
             LiveEvent.Cancelled -> LiveMirror.Offline
         }
     }
 
-    fun clear() { _state.value = LiveMirror.Offline }
+    fun clear() {
+        _state.value = LiveMirror.Offline
+    }
 }
 
 sealed interface LiveMirror {
     data object Offline : LiveMirror
     data class Standby(val drillId: String) : LiveMirror
     data class Running(val drillId: String, val startedAtEpochMs: Long, val shots: List<Double>) : LiveMirror
+
     /** String finished; waiting for the durable copy to land. */
     data class Settling(val stringId: String) : LiveMirror
 }

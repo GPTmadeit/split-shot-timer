@@ -60,8 +60,11 @@ data class ShotString(
     val total: Double? get() = shotsSec.lastOrNull()
 
     val splits: List<Double>
-        get() = if (shotsSec.size < 2) emptyList()
-        else shotsSec.zipWithNext { a, b -> b - a }
+        get() = if (shotsSec.size < 2) {
+            emptyList()
+        } else {
+            shotsSec.zipWithNext { a, b -> b - a }
+        }
 
     val fastestSplit: Double? get() = splits.minOrNull()
     val slowestSplit: Double? get() = splits.maxOrNull()
@@ -89,8 +92,7 @@ data class ShotString(
 /** USPSA scoring. */
 @Serializable
 data class Score(val a: Int = 0, val c: Int = 0, val d: Int = 0, val m: Int = 0, val ns: Int = 0) {
-    fun points(major: Boolean): Int =
-        a * 5 + c * (if (major) 4 else 3) + d * (if (major) 2 else 1) - m * 10 - ns * 10
+    fun points(major: Boolean): Int = a * 5 + c * (if (major) 4 else 3) + d * (if (major) 2 else 1) - m * 10 - ns * 10
 
     fun hitFactor(timeSec: Double, major: Boolean): Double =
         if (timeSec <= 0.0) 0.0 else (points(major).coerceAtLeast(0)) / timeSec

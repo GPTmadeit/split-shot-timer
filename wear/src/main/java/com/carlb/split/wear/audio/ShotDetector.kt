@@ -2,9 +2,9 @@ package com.carlb.split.wear.audio
 
 import android.annotation.SuppressLint
 import android.media.AudioFormat
+import android.media.AudioManager
 import android.media.AudioRecord
 import android.media.AudioTimestamp
-import android.media.AudioManager
 import android.media.MediaRecorder
 import android.util.Log
 import kotlin.math.abs
@@ -32,10 +32,7 @@ import kotlin.math.pow
  * clock is interpolated from that anchor, which is why the resolution below is
  * one sample (20.8 us at 48 kHz) rather than one buffer (~10 ms).
  */
-class ShotDetector(
-    private val audioManager: AudioManager,
-    private val onOnset: (OnsetEvent) -> Unit,
-) {
+class ShotDetector(private val audioManager: AudioManager, private val onOnset: (OnsetEvent) -> Unit) {
 
     data class OnsetEvent(
         /** CLOCK_MONOTONIC nanos of the onset sample. Same timebase as the beep. */
@@ -45,18 +42,16 @@ class ShotDetector(
         val peakDbfs: Double,
     )
 
-    data class Config(
-        val sensitivityDb: Int = -22,
-        val clipGate: Boolean = true,
-        val blankingMs: Int = 60,
-    )
+    data class Config(val sensitivityDb: Int = -22, val clipGate: Boolean = true, val blankingMs: Int = 60)
 
     @Volatile var config: Config = Config()
+
     @Volatile private var running = false
 
     /** Live input level for the calibration meter, dBFS. */
     @Volatile var levelDbfs: Double = -100.0
         private set
+
     @Volatile var clipping: Boolean = false
         private set
 
@@ -98,7 +93,9 @@ class ShotDetector(
         sampleRate = rate
 
         val minBuf = AudioRecord.getMinBufferSize(
-            rate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT
+            rate,
+            AudioFormat.CHANNEL_IN_MONO,
+            AudioFormat.ENCODING_PCM_16BIT,
         )
         // Small buffers keep latency down; we still time by HAL timestamp, but a
         // short buffer means the UI tick and the haptic land closer to the shot.
@@ -107,9 +104,13 @@ class ShotDetector(
         val r = try {
             AudioRecord(source, rate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufBytes)
         } catch (e: Exception) {
-            Log.e(TAG, "AudioRecord construction failed", e); return false
+            Log.e(TAG, "AudioRecord construction failed", e)
+            return false
         }
-        if (r.state != AudioRecord.STATE_INITIALIZED) { r.release(); return false }
+        if (r.state != AudioRecord.STATE_INITIALIZED) {
+            r.release()
+            return false
+        }
 
         record = r
         running = true
@@ -133,7 +134,9 @@ class ShotDetector(
 
     /** Discard onsets until this monotonic time — used to blank the start tone. */
     @Volatile private var suppressUntilNanos: Long = 0L
-    fun suppressUntil(monotonicNanos: Long) { suppressUntilNanos = monotonicNanos }
+    fun suppressUntil(monotonicNanos: Long) {
+        suppressUntilNanos = monotonicNanos
+    }
 
     private fun loop(r: AudioRecord) {
         val buf = ShortArray(BLOCK)
@@ -173,7 +176,12 @@ class ShotDetector(
             for (i in 0 until n) {
                 val a = abs(buf[i].toInt())
                 if (a > peak) peak = a
-                if (a >= CLIP_LEVEL) { run++; if (run > maxRun) maxRun = run } else run = 0
+                if (a >= CLIP_LEVEL) {
+                    run++
+                    if (run > maxRun) maxRun = run
+                } else {
+                    run = 0
+                }
             }
             carryClipRun = run
             levelDbfs = if (peak <= 0) -100.0 else 20.0 * log10(peak / 32767.0)
@@ -206,8 +214,10 @@ class ShotDetector(
     companion object {
         private const val TAG = "ShotDetector"
         private const val BLOCK = 512
+
         /** 16-bit full scale is 32767; treat the top ~2% as railed. */
         private const val CLIP_LEVEL = 32100
+
         /** Consecutive railed samples required when the clip gate is armed. */
         private const val MIN_CLIP_RUN = 3
     }

@@ -120,7 +120,8 @@ class TimerEngine(
 
     fun arm() {
         cancelJobs()
-        shots.clear(); rejected = 0
+        shots.clear()
+        rejected = 0
         val cfg = _state.value.config
         val wait = cfg.drawDelayMillis(Random.Default)
 
@@ -184,13 +185,17 @@ class TimerEngine(
 
         val drill = _state.value.drill
         if (drill.shots > 0 && shots.size >= drill.shots) {
-            scope.launch { delay(120); stop() }
+            scope.launch {
+                delay(120)
+                stop()
+            }
         }
     }
 
     fun stop() {
         val phase = _state.value.phase
-        armJob?.cancel(); parJob?.cancel()
+        armJob?.cancel()
+        parJob?.cancel()
 
         if (phase is TimerPhase.Running && shots.isNotEmpty()) {
             val drill = _state.value.drill
@@ -225,14 +230,19 @@ class TimerEngine(
 
     fun reset() {
         cancelJobs()
-        shots.clear(); rejected = 0
+        shots.clear()
+        rejected = 0
         _state.value = _state.value.copy(
-            phase = TimerPhase.Idle, shots = emptyList(), rejectedByRecoil = 0
+            phase = TimerPhase.Idle,
+            shots = emptyList(),
+            rejectedByRecoil = 0,
         )
     }
 
     private fun cancelJobs() {
-        armJob?.cancel(); parJob?.cancel(); repeatJob?.cancel()
+        armJob?.cancel()
+        parJob?.cancel()
+        repeatJob?.cancel()
     }
 
     fun release() {

@@ -55,11 +55,7 @@ import java.util.Date
 import java.util.Locale
 
 @Composable
-fun HomeScreen(
-    strings: List<ShotString>,
-    live: LiveMirror,
-    onScore: (String, Double, String) -> Unit,
-) {
+fun HomeScreen(strings: List<ShotString>, live: LiveMirror, onScore: (String, Double, String) -> Unit) {
     val cs = MaterialTheme.colorScheme
     val bestDraw = strings.mapNotNull { it.first }.minOrNull()
 
@@ -149,7 +145,8 @@ private fun Header(live: LiveMirror) {
         Spacer(Modifier.weight(1f))
         val connected = live !is LiveMirror.Offline
         val dot by animateColorAsState(
-            if (connected) cs.primary else cs.outline, label = "dot"
+            if (connected) cs.primary else cs.outline,
+            label = "dot",
         )
         if (connected) {
             LivePulse(cs.primary, Modifier.size(14.dp))
@@ -214,11 +211,13 @@ private fun LiveCard(live: LiveMirror) {
                         )
                     }
                 }
+
                 is LiveMirror.Standby -> Text(
                     DrillLibrary.byId(live.drillId).name,
                     fontSize = 20.sp,
                     color = cs.onPrimaryContainer,
                 )
+
                 else -> Text("Waiting for the string to land", fontSize = 13.sp, color = cs.onPrimaryContainer)
             }
         }
@@ -237,7 +236,12 @@ private fun SessionStats(strings: List<ShotString>) {
 }
 
 @Composable
-private fun StatTile(label: String, value: String, modifier: Modifier = Modifier, tint: androidx.compose.ui.graphics.Color? = null) {
+private fun StatTile(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    tint: androidx.compose.ui.graphics.Color? = null,
+) {
     val cs = MaterialTheme.colorScheme
     Surface(color = cs.surfaceContainer, shape = RoundedCornerShape(18.dp), modifier = modifier) {
         Column(Modifier.padding(14.dp)) {
@@ -248,7 +252,13 @@ private fun StatTile(label: String, value: String, modifier: Modifier = Modifier
                 fontFamily = FontFamily.Monospace,
                 color = tint ?: cs.onSurface,
             )
-            Text(label, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp, color = cs.onSurfaceVariant)
+            Text(
+                label,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.2.sp,
+                color = cs.onSurfaceVariant,
+            )
         }
     }
 }
@@ -279,7 +289,12 @@ private fun StringCard(
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text(string.drillName, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = cs.onSurface)
-                    Text(stamp(string.epochMillis), fontSize = 10.sp, fontFamily = FontFamily.Monospace, color = cs.onSurfaceVariant)
+                    Text(
+                        stamp(string.epochMillis),
+                        fontSize = 10.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = cs.onSurfaceVariant,
+                    )
                 }
                 string.hitFactor?.let {
                     Text(
@@ -389,7 +404,13 @@ private fun ZoneButton(label: String, count: Int, modifier: Modifier = Modifier,
 private fun Stat(label: String, value: String) {
     val cs = MaterialTheme.colorScheme
     Column {
-        Text(value, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.Monospace, color = cs.onSurface)
+        Text(
+            value,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            fontFamily = FontFamily.Monospace,
+            color = cs.onSurface,
+        )
         Text(label, fontSize = 8.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, color = cs.onSurfaceVariant)
     }
 }
@@ -407,5 +428,4 @@ private fun Label(text: String) {
 
 private fun f2(v: Double) = String.format(Locale.US, "%.2f", v)
 private fun clock(sec: Double) = String.format(Locale.US, "%.2f", sec)
-private fun stamp(ms: Long) =
-    SimpleDateFormat("MMM d  HH:mm", Locale.getDefault()).format(Date(ms))
+private fun stamp(ms: Long) = SimpleDateFormat("MMM d  HH:mm", Locale.getDefault()).format(Date(ms))

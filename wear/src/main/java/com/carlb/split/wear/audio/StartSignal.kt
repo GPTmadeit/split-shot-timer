@@ -105,14 +105,14 @@ class StartSignal(context: Context) {
                 AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_ALARM)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build()
+                    .build(),
             )
             .setAudioFormat(
                 AudioFormat.Builder()
                     .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
                     .setSampleRate(rate)
                     .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-                    .build()
+                    .build(),
             )
             .setBufferSizeInBytes(pcm.size * 2)
             .setTransferMode(AudioTrack.MODE_STATIC)
@@ -139,7 +139,10 @@ class StartSignal(context: Context) {
         track.playbackHeadPosition.let { /* touch to keep track alive */ }
         Thread {
             Thread.sleep((ms + 120).toLong())
-            runCatching { track.stop(); track.release() }
+            runCatching {
+                track.stop()
+                track.release()
+            }
         }.start()
 
         return Emission(start, start + ms * 1_000_000L, exact)

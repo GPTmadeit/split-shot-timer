@@ -55,5 +55,7 @@ class StringStore(context: Context) {
         ds.edit { it[keyStrings] = "[]" }
     }
 
-    private companion object { const val MAX_RETAINED = 400 }
+    private companion object {
+        const val MAX_RETAINED = 400
+    }
 }

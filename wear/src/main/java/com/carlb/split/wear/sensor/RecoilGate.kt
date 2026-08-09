@@ -50,7 +50,8 @@ class RecoilGate(private val sensorManager: SensorManager) : SensorEventListener
     fun start() {
         val s = accel ?: return
         bootMinusMonotonic = SystemClock.elapsedRealtimeNanos() - System.nanoTime()
-        writeIdx = 0; filled = 0
+        writeIdx = 0
+        filled = 0
         sensorManager.registerListener(this, s, SensorManager.SENSOR_DELAY_FASTEST)
     }
 
@@ -100,6 +101,7 @@ class RecoilGate(private val sensorManager: SensorManager) : SensorEventListener
 
     companion object {
         private const val CAPACITY = 2048
+
         /** Estimated, not measured. Characterise against your own gun. */
         const val WINDOW_MS = 40L
         const val DEFAULT_THRESHOLD = 18f // m/s^2 above the slow follower

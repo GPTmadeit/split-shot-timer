@@ -37,12 +37,12 @@ data class FaceModel(
     val scaleSec: Double,
     val shots: List<Double>,
     val envelope: FloatArray,
-    val armProgress: Float,   // 1 -> 0 while standing by
+    val armProgress: Float, // 1 -> 0 while standing by
     val parSec: Double,
     val isRunning: Boolean,
     val isArmed: Boolean,
     val isComplete: Boolean,
-    val levelNorm: Float,     // 0..1 live mic level, idle only
+    val levelNorm: Float, // 0..1 live mic level, idle only
     val clipping: Boolean,
 ) {
     override fun equals(other: Any?) = this === other
@@ -52,12 +52,7 @@ data class FaceModel(
 const val ENVELOPE_BINS = 240
 
 @Composable
-fun InstrumentFace(
-    model: () -> FaceModel,
-    shotCount: Int,
-    startPulseKey: Int,
-    modifier: Modifier = Modifier,
-) {
+fun InstrumentFace(model: () -> FaceModel, shotCount: Int, startPulseKey: Int, modifier: Modifier = Modifier) {
     // Hero moment: the shockwave when the tone fires. Low damping so it
     // overshoots and settles — a duration-based fade reads as a screen wipe,
     // a spring reads as an impact.
@@ -91,7 +86,13 @@ fun InstrumentFace(
         drawCircle(SteelDim.copy(alpha = 0.35f), radius = r, center = c, style = Stroke(band))
 
         // --- second ticks --------------------------------------------------
-        val tickCount = if (m.scaleSec <= 5) 5 else if (m.scaleSec <= 10) 10 else 12
+        val tickCount = if (m.scaleSec <= 5) {
+            5
+        } else if (m.scaleSec <= 10) {
+            10
+        } else {
+            12
+        }
         repeat(tickCount) { i ->
             val a = -PI / 2 + (i.toFloat() / tickCount) * 2 * PI
             val inner = r + band / 2 + band * 0.25f
@@ -223,5 +224,4 @@ fun InstrumentFace(
 }
 
 /** Unused helper kept for symmetry with the phone renderer. */
-internal fun DrawScope.rotateAround(deg: Float, c: Offset, block: DrawScope.() -> Unit) =
-    rotate(deg, c) { block() }
+internal fun DrawScope.rotateAround(deg: Float, c: Offset, block: DrawScope.() -> Unit) = rotate(deg, c) { block() }

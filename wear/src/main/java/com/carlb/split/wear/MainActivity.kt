@@ -45,7 +45,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private val requestMic = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
+        ActivityResultContracts.RequestPermission(),
     ) { granted ->
         permissionGranted = granted
         if (granted) startSession()
@@ -58,7 +58,8 @@ class MainActivity : ComponentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         permissionGranted = ContextCompat.checkSelfPermission(
-            this, Manifest.permission.RECORD_AUDIO
+            this,
+            Manifest.permission.RECORD_AUDIO,
         ) == PackageManager.PERMISSION_GRANTED
 
         setContent {
@@ -71,7 +72,9 @@ class MainActivity : ComponentActivity() {
                             fontSize = 12.sp,
                             modifier = Modifier.padding(24.dp),
                         )
+
                         svc == null -> Text("Starting", fontSize = 12.sp)
+
                         else -> WearApp(
                             engine = svc.engine,
                             onConfigChange = { cfg ->

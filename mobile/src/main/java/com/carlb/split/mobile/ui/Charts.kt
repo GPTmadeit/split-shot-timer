@@ -43,11 +43,7 @@ import kotlin.math.min
  * information rather than decorating.
  */
 @Composable
-fun MorphBadge(
-    active: Boolean,
-    color: Color,
-    modifier: Modifier = Modifier,
-) {
+fun MorphBadge(active: Boolean, color: Color, modifier: Modifier = Modifier) {
     val circle = remember { RoundedPolygon.circle(numVertices = 12) }
     val rosette = remember {
         RoundedPolygon.star(
@@ -88,10 +84,9 @@ fun MorphBadge(
 }
 
 /** graphics-shapes emits an android.graphics.Path; Compose wants its own. */
-private fun android.graphics.Path.asComposePath2(): Path =
-    androidx.compose.ui.graphics.Path().also { composePath ->
-        composePath.asAndroidPath().set(this)
-    }
+private fun android.graphics.Path.asComposePath2(): Path = androidx.compose.ui.graphics.Path().also { composePath ->
+    composePath.asAndroidPath().set(this)
+}
 
 /**
  * Split bars with a staggered spring entry. Draw is brass, fastest green,
@@ -99,14 +94,11 @@ private fun android.graphics.Path.asComposePath2(): Path =
  * do not have to read the column.
  */
 @Composable
-fun SplitBars(
-    draw: Double?,
-    splits: List<Double>,
-    modifier: Modifier = Modifier,
-    surface: Color,
-    accent: Color,
-) {
-    val values = buildList { draw?.let { add(it) }; addAll(splits) }
+fun SplitBars(draw: Double?, splits: List<Double>, modifier: Modifier = Modifier, surface: Color, accent: Color) {
+    val values = buildList {
+        draw?.let { add(it) }
+        addAll(splits)
+    }
     if (values.isEmpty()) return
 
     val peak = max(values.max(), 0.2)
@@ -160,13 +152,7 @@ fun SplitBars(
  * a stroke revealing at constant rate reads as writing, not as arriving.
  */
 @Composable
-fun TrendChart(
-    values: List<Double>,
-    modifier: Modifier = Modifier,
-    line: Color,
-    fill: Color,
-    grid: Color,
-) {
+fun TrendChart(values: List<Double>, modifier: Modifier = Modifier, line: Color, fill: Color, grid: Color) {
     if (values.size < 2) return
 
     val reveal = remember(values.size) { Animatable(0f) }
@@ -196,7 +182,8 @@ fun TrendChart(
         val path = Path().apply {
             moveTo(pt(0).x, pt(0).y)
             for (i in 1 until shown) {
-                val p0 = pt(i - 1); val p1 = pt(i)
+                val p0 = pt(i - 1)
+                val p1 = pt(i)
                 val midX = (p0.x + p1.x) / 2
                 cubicTo(midX, p0.y, midX, p1.y, p1.x, p1.y)
             }

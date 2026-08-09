@@ -43,10 +43,7 @@ private object Routes {
 }
 
 @Composable
-fun WearApp(
-    engine: TimerEngine,
-    onConfigChange: (TimerConfig) -> Unit,
-) {
+fun WearApp(engine: TimerEngine, onConfigChange: (TimerConfig) -> Unit) {
     val nav = rememberSwipeDismissableNavController()
     SplitTheme {
         SwipeDismissableNavHost(navController = nav, startDestination = Routes.TIMER) {
@@ -74,7 +71,11 @@ private fun TimerRoute(engine: TimerEngine, nav: NavHostController) {
         ) {
             when (phase) {
                 is TimerPhase.Armed -> ActionButton("CANCEL", Brass) { engine.reset() }
-                is TimerPhase.Running -> ActionButton("STOP", MaterialTheme.colorScheme.surfaceContainerHigh) { engine.stop() }
+
+                is TimerPhase.Running -> ActionButton("STOP", MaterialTheme.colorScheme.surfaceContainerHigh) {
+                    engine.stop()
+                }
+
                 else -> ActionButton("START", HiViz) { engine.arm() }
             }
         }
@@ -132,15 +133,20 @@ private fun DrillsRoute(engine: TimerEngine, nav: NavHostController) {
         items(DrillLibrary.all) { drill ->
             val selected = drill.id == state.drill.id
             FilledTonalButton(
-                onClick = { engine.setDrill(drill); nav.popBackStack() },
+                onClick = {
+                    engine.setDrill(drill)
+                    nav.popBackStack()
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 3.dp),
                 colors = if (selected) {
                     ButtonDefaults.filledTonalButtonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
                     )
-                } else ButtonDefaults.filledTonalButtonColors(),
+                } else {
+                    ButtonDefaults.filledTonalButtonColors()
+                },
             ) {
                 Column(Modifier.fillMaxWidth()) {
                     Text(
@@ -227,7 +233,12 @@ private fun SettingsRoute(engine: TimerEngine, onConfigChange: (TimerConfig) -> 
         }
         item {
             SettingRow("Repeat: ${if (cfg.autoRepeatSec == 0) "off" else "${cfg.autoRepeatSec}s"}") {
-                val next = when (cfg.autoRepeatSec) { 0 -> 5; 5 -> 8; 8 -> 12; else -> 0 }
+                val next = when (cfg.autoRepeatSec) {
+                    0 -> 5
+                    5 -> 8
+                    8 -> 12
+                    else -> 0
+                }
                 onConfigChange(cfg.copy(autoRepeatSec = next))
             }
         }
@@ -253,9 +264,8 @@ private fun SettingRow(label: String, onClick: () -> Unit) {
 }
 
 /** Tap target without a ripple — the drill label reads as a label, not a button. */
-private fun Modifier.clickableNoRipple(onClick: () -> Unit): Modifier =
-    this.padding(2.dp).clickable(
-        interactionSource = null,
-        indication = null,
-        onClick = onClick,
-    )
+private fun Modifier.clickableNoRipple(onClick: () -> Unit): Modifier = this.padding(2.dp).clickable(
+    interactionSource = null,
+    indication = null,
+    onClick = onClick,
+)

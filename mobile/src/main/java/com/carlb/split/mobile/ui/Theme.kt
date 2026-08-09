@@ -79,10 +79,14 @@ private val LightScheme = lightColorScheme(
 private val SplitTypography = Typography().let { base ->
     base.copy(
         displayLarge = base.displayLarge.copy(
-            fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = (-2).sp
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = (-2).sp,
         ),
         displayMedium = base.displayMedium.copy(
-            fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = (-1.5).sp
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = (-1.5).sp,
         ),
         headlineSmall = base.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
         labelSmall = base.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp),

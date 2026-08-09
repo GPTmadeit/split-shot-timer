@@ -1,0 +1,30 @@
+# Normalise line endings in the repo to LF regardless of contributor platform.
+# Without this, a Windows checkout commits CRLF and every cross-platform diff
+# shows the whole file as changed.
+* text=auto eol=lf
+
+# Scripts that must keep their platform's endings to stay executable.
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+gradlew text eol=lf
+
+# Binaries — never touch, never diff.
+*.jar    binary
+*.apk    binary
+*.aab    binary
+*.png    binary
+*.jpg    binary
+*.webp   binary
+*.ttf    binary
+*.otf    binary
+*.keystore binary
+*.jks    binary
+
+# Treat as documentation for language statistics rather than source.
+docs/**  linguist-documentation
+*.svg    linguist-vendored=false linguist-detectable=false
+
+# Collapse the Gradle wrapper in diffs — it is vendored tooling, not our code.
+gradle/wrapper/gradle-wrapper.jar binary linguist-vendored
+gradlew      linguist-vendored
+gradlew.bat  linguist-vendored

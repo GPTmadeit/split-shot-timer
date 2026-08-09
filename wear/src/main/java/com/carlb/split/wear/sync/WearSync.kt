@@ -79,5 +79,7 @@ class WearSync(context: Context, private val scope: CoroutineScope) {
         }
     }
 
-    private companion object { const val TAG = "WearSync" }
+    private companion object {
+        const val TAG = "WearSync"
+    }
 }

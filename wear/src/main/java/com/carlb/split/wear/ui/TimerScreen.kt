@@ -49,11 +49,7 @@ import kotlin.math.floor
  * composition itself stays still.
  */
 @Composable
-fun TimerFace(
-    state: TimerUiState,
-    elapsedProvider: () -> Double,
-    modifier: Modifier = Modifier,
-) {
+fun TimerFace(state: TimerUiState, elapsedProvider: () -> Double, modifier: Modifier = Modifier) {
     val phase = state.phase
     val isRunning = phase is TimerPhase.Running
     val isArmed = phase is TimerPhase.Armed
@@ -84,6 +80,7 @@ fun TimerFace(
                         val gone = (now - p.armedAtNanos) / 1_000_000.0
                         armProgress = (1.0 - gone / p.delayMillis).coerceIn(0.0, 1.0).toFloat()
                     }
+
                     is TimerPhase.Running -> {
                         elapsed = elapsedProvider()
                         while (elapsed > scaleSec) {
@@ -101,7 +98,9 @@ fun TimerFace(
                         val lvl = ((state.levelDbfs + 60.0) / 60.0).coerceIn(0.0, 1.0).toFloat()
                         if (lvl > envelope[bin]) envelope[bin] = lvl
                     }
+
                     is TimerPhase.Complete -> elapsed = p.string.total ?: 0.0
+
                     else -> elapsed = 0.0
                 }
                 frameTick++
@@ -173,7 +172,8 @@ private fun Readout(
         }
     }
 
-    @Suppress("UNUSED_EXPRESSION") frameTick // read to tie this to the frame loop
+    @Suppress("UNUSED_EXPRESSION")
+    frameTick // read to tie this to the frame loop
 
     val shown = when {
         isArmed -> null
@@ -198,13 +198,19 @@ private fun Readout(
             MicroStat("DRAW", state.shots.firstOrNull()?.let { fmt2(it) } ?: "--")
             MicroStat(
                 "SPLIT",
-                if (isRunning && state.shots.isNotEmpty()) fmt2(elapsed - state.shots.last())
-                else state.shots.zipWithNext { a, b -> b - a }.lastOrNull()?.let { fmt2(it) } ?: "--",
+                if (isRunning && state.shots.isNotEmpty()) {
+                    fmt2(elapsed - state.shots.last())
+                } else {
+                    state.shots.zipWithNext { a, b -> b - a }.lastOrNull()?.let { fmt2(it) } ?: "--"
+                },
             )
             MicroStat(
                 "SHOTS",
-                if (state.drill.shots > 0) "${state.shots.size}/${state.drill.shots}"
-                else "${state.shots.size}",
+                if (state.drill.shots > 0) {
+                    "${state.shots.size}/${state.drill.shots}"
+                } else {
+                    "${state.shots.size}"
+                },
             )
         }
 
@@ -281,7 +287,7 @@ fun LevelMeter(levelDbfs: Double, clipping: Boolean, thresholdDb: Int, modifier:
         Box(
             Modifier
                 .fillMaxSize()
-                .padding(end = 0.dp)
+                .padding(end = 0.dp),
         ) {
             Canvas2(norm, clipping, ((thresholdDb + 60f) / 60f).coerceIn(0f, 1f))
         }

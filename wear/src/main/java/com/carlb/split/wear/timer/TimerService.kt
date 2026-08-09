@@ -10,8 +10,8 @@ import android.os.IBinder
 import android.os.PowerManager
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
-import com.carlb.split.core.ShotString
 import com.carlb.split.R
+import com.carlb.split.core.ShotString
 import com.carlb.split.wear.MainActivity
 import com.carlb.split.wear.data.StringStore
 import com.carlb.split.wear.sync.WearSync
@@ -111,15 +111,17 @@ class TimerService : LifecycleService() {
         val nm = getSystemService(NotificationManager::class.java)
         if (nm.getNotificationChannel(CHANNEL) == null) {
             nm.createNotificationChannel(
-                NotificationChannel(CHANNEL, "Range session", NotificationManager.IMPORTANCE_LOW)
+                NotificationChannel(CHANNEL, "Range session", NotificationManager.IMPORTANCE_LOW),
             )
         }
     }
 
     private fun buildNotification(): Notification {
         val open = PendingIntent.getActivity(
-            this, 0, Intent(this, MainActivity::class.java),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            this,
+            0,
+            Intent(this, MainActivity::class.java),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         return Notification.Builder(this, CHANNEL)
             .setContentTitle("Range session")

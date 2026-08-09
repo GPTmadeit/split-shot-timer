@@ -1,0 +1,38 @@
+root = true
+
+[*]
+# intellij_idea, not ktlint_official. ktlint_official reformats to a house
+# style Android Studio does not produce, so CI would disagree with every
+# contributor's IDE on save. This ruleset matches the IDE defaults.
+# ktlint resolves this from the root section only.
+ktlint_code_style = intellij_idea
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{kt,kts}]
+max_line_length = 120
+ij_kotlin_allow_trailing_comma = true
+ij_kotlin_allow_trailing_comma_on_call_site = true
+# Wildcard imports stay banned so diffs are honest about what a file uses.
+ktlint_standard_no-wildcard-imports = enabled
+# Test names are written as readable sentences in backticks.
+ktlint_standard_function-naming = disabled
+
+[*.{xml,svg}]
+indent_size = 4
+
+[*.{yml,yaml,json,toml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.{bat,cmd}]
+end_of_line = crlf
+
+[gradlew]
+indent_size = 2

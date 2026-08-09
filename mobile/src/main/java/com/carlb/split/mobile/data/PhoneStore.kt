@@ -45,10 +45,11 @@ class PhoneStore(context: Context) {
         ds.edit { it[key] = "[]" }
     }
 
-    private fun decode(raw: String?): List<ShotString> =
-        raw?.let {
-            runCatching { Wire.json.decodeFromString<List<ShotString>>(it) }.getOrDefault(emptyList())
-        } ?: emptyList()
+    private fun decode(raw: String?): List<ShotString> = raw?.let {
+        runCatching { Wire.json.decodeFromString<List<ShotString>>(it) }.getOrDefault(emptyList())
+    } ?: emptyList()
 
-    private companion object { const val MAX = 2000 }
+    private companion object {
+        const val MAX = 2000
+    }
 }
