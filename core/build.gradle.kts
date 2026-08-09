@@ -27,4 +27,7 @@ android {
 dependencies {
     api(libs.kotlinx.serialization)
     api(libs.kotlinx.coroutines)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 }
