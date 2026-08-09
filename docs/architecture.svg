@@ -1,17 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 340" width="880" height="340" role="img" aria-label="Watch owns the microphone, tone and clock; two transports carry data to the phone">
+  <!-- Presentation attributes throughout rather than a <style> block: GitHub's
+       SVG sanitiser can strip internal CSS, which would render this colourless.
+       Colours chosen to read on both light and dark GitHub themes. -->
   <defs>
-    <style>
-      .ttl  { font: 700 13px ui-monospace, "SF Mono", "Roboto Mono", monospace; letter-spacing: 1.6px; }
-      .lbl  { font: 700 10px ui-monospace, "SF Mono", "Roboto Mono", monospace; letter-spacing: 1.2px; }
-      .body { font: 400 11.5px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-      .mono { font: 600 11px ui-monospace, "SF Mono", "Roboto Mono", monospace; }
-      .hi   { fill: #FF5A1F; }
-      .br   { fill: #C89A2E; }
-      .st   { fill: #8B98A5; }
-      .sk   { stroke: #8B98A5; }
-      .hk   { stroke: #FF5A1F; }
-      .bk   { stroke: #C89A2E; }
-    </style>
     <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0 0 L10 5 L0 10 z" fill="#8B98A5"/>
     </marker>
@@ -20,77 +11,69 @@
     </marker>
   </defs>
 
-  <!-- ================= WATCH ================= -->
+  <!-- ===================== WATCH ===================== -->
   <g transform="translate(40,54)">
-    <rect x="0" y="0" width="238" height="232" rx="22" fill="none" class="hk" stroke-width="1.5" opacity="0.55"/>
-    <text x="20" y="30" class="ttl hi">WATCH</text>
-    <text x="20" y="48" class="lbl st">SYSTEM OF RECORD</text>
+    <rect x="0" y="0" width="238" height="232" rx="22" fill="none" stroke="#FF5A1F" stroke-width="1.5" opacity="0.55"/>
+    <text x="20" y="30" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="700" letter-spacing="1.6" fill="#FF5A1F">WATCH</text>
+    <text x="20" y="48" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" font-weight="700" letter-spacing="1.2" fill="#8B98A5">SYSTEM OF RECORD</text>
 
-    <!-- the face: ring with burned-in shot ticks -->
     <g transform="translate(119,140)">
-      <circle r="62" fill="none" class="sk" stroke-width="9" opacity="0.22"/>
-      <path d="M 0 -62 A 62 62 0 0 1 46 -41" fill="none" class="hk" stroke-width="9" stroke-linecap="round"/>
-      <g class="hk" stroke-width="3" stroke-linecap="round">
-        <line x1="0"   y1="-53" x2="0"   y2="-72"/>
-        <line x1="26"  y1="-47" x2="35"  y2="-63"/>
-        <line x1="44"  y1="-30" x2="60"  y2="-40"/>
-        <line x1="52"  y1="-8"  x2="71"  y2="-11"/>
+      <circle r="62" fill="none" stroke="#8B98A5" stroke-width="9" opacity="0.22"/>
+      <path d="M 0 -62 A 62 62 0 0 1 46 -41" fill="none" stroke="#FF5A1F" stroke-width="9" stroke-linecap="round"/>
+      <g stroke="#FF5A1F" stroke-width="3" stroke-linecap="round">
+        <line x1="0"  y1="-53" x2="0"  y2="-72"/>
+        <line x1="26" y1="-47" x2="35" y2="-63"/>
+        <line x1="44" y1="-30" x2="60" y2="-40"/>
+        <line x1="52" y1="-8"  x2="71" y2="-11"/>
       </g>
-      <text x="0" y="6"  text-anchor="middle" class="mono hi" style="font-size:21px">2.36</text>
-      <text x="0" y="22" text-anchor="middle" class="lbl st" style="font-size:8px">6 SHOTS</text>
+      <text x="0" y="6" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="21" font-weight="600" fill="#FF5A1F">2.36</text>
+      <text x="0" y="22" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="8" font-weight="700" letter-spacing="1.2" fill="#8B98A5">6 SHOTS</text>
     </g>
 
-    <text x="20" y="222" class="body st">mic &#183; tone &#183; clock &#183; state machine</text>
+    <text x="20" y="222" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="11.5" fill="#8B98A5">mic &#183; tone &#183; clock &#183; state machine</text>
   </g>
 
-  <!-- ================= TRANSPORTS ================= -->
+  <!-- ===================== TRANSPORTS ===================== -->
   <g transform="translate(292,0)">
-    <!-- live: best effort -->
     <g transform="translate(0,104)">
-      <line x1="10" y1="0" x2="272" y2="0" class="sk" stroke-width="1.6"
-            stroke-dasharray="7 6" marker-end="url(#ah)"/>
-      <text x="12" y="-30" class="lbl st">MessageClient</text>
-      <text x="12" y="-14" class="mono st">/split/live</text>
-      <text x="12" y="20" class="body st">Low latency, best effort.</text>
-      <text x="12" y="36" class="body st">Dropped when the link is down &#8212;</text>
-      <text x="12" y="52" class="body st">it is a mirror, not a record.</text>
+      <line x1="10" y1="0" x2="272" y2="0" stroke="#8B98A5" stroke-width="1.6" stroke-dasharray="7 6" marker-end="url(#ah)"/>
+      <text x="12" y="-30" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" font-weight="700" letter-spacing="1.2" fill="#8B98A5">MessageClient</text>
+      <text x="12" y="-14" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="600" fill="#8B98A5">/split/live</text>
+      <text x="12" y="20" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="11.5" fill="#8B98A5">Low latency, best effort.</text>
+      <text x="12" y="36" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="11.5" fill="#8B98A5">Dropped when the link is down &#8212;</text>
+      <text x="12" y="52" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="11.5" fill="#8B98A5">it is a mirror, not a record.</text>
     </g>
 
-    <!-- durable -->
     <g transform="translate(0,246)">
-      <line x1="10" y1="0" x2="272" y2="0" class="bk" stroke-width="2.4" marker-end="url(#ahb)"/>
-      <text x="12" y="-30" class="lbl br">DataClient</text>
-      <text x="12" y="-14" class="mono br">/split/string/&lt;id&gt;</text>
-      <text x="12" y="22" class="body st">Replicated and durable. Syncs</text>
-      <text x="12" y="38" class="body st">whenever the phone comes back.</text>
+      <line x1="10" y1="0" x2="272" y2="0" stroke="#C89A2E" stroke-width="2.4" marker-end="url(#ahb)"/>
+      <text x="12" y="-30" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" font-weight="700" letter-spacing="1.2" fill="#C89A2E">DataClient</text>
+      <text x="12" y="-14" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="600" fill="#C89A2E">/split/string/&lt;id&gt;</text>
+      <text x="12" y="22" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="11.5" fill="#8B98A5">Replicated and durable. Syncs</text>
+      <text x="12" y="38" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="11.5" fill="#8B98A5">whenever the phone comes back.</text>
     </g>
   </g>
 
-  <!-- ================= PHONE ================= -->
+  <!-- ===================== PHONE ===================== -->
   <g transform="translate(602,54)">
-    <rect x="0" y="0" width="238" height="232" rx="22" fill="none" class="sk" stroke-width="1.5" opacity="0.55"/>
-    <text x="20" y="30" class="ttl st">PHONE</text>
-    <text x="20" y="48" class="lbl st">REPLICA</text>
+    <rect x="0" y="0" width="238" height="232" rx="22" fill="none" stroke="#8B98A5" stroke-width="1.5" opacity="0.55"/>
+    <text x="20" y="30" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="700" letter-spacing="1.6" fill="#8B98A5">PHONE</text>
+    <text x="20" y="48" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" font-weight="700" letter-spacing="1.2" fill="#8B98A5">REPLICA</text>
 
     <g transform="translate(72,74)">
-      <rect x="0" y="0" width="94" height="126" rx="13" fill="none" class="sk" stroke-width="1.6" opacity="0.8"/>
-      <rect x="11" y="13" width="72" height="25" rx="6" class="hi" opacity="0.16"/>
-      <text x="18" y="30" class="mono hi" style="font-size:13px">2.36</text>
-      <g class="st" opacity="0.75">
-        <rect x="11" y="48" width="58" height="6" rx="3"/>
+      <rect x="0" y="0" width="94" height="126" rx="13" fill="none" stroke="#8B98A5" stroke-width="1.6" opacity="0.8"/>
+      <rect x="11" y="13" width="72" height="25" rx="6" fill="#FF5A1F" opacity="0.16"/>
+      <text x="18" y="30" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="600" fill="#FF5A1F">2.36</text>
+      <g fill="#8B98A5" opacity="0.75">
         <rect x="11" y="60" width="40" height="6" rx="3"/>
         <rect x="11" y="72" width="66" height="6" rx="3"/>
         <rect x="11" y="84" width="34" height="6" rx="3"/>
         <rect x="11" y="96" width="52" height="6" rx="3"/>
       </g>
-      <rect x="11" y="48" width="58" height="6" rx="3" class="br"/>
+      <rect x="11" y="48" width="58" height="6" rx="3" fill="#C89A2E"/>
     </g>
 
-    <text x="20" y="222" class="body st">log &#183; splits &#183; trend &#183; hit factor</text>
+    <text x="20" y="222" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="11.5" fill="#8B98A5">log &#183; splits &#183; trend &#183; hit factor</text>
   </g>
 
-  <!-- footer note -->
-  <text x="440" y="322" text-anchor="middle" class="body st" opacity="0.85">
-    Nothing in the timing path ever waits on Bluetooth.
-  </text>
+  <text x="440" y="322" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="11.5" fill="#8B98A5" opacity="0.85">Nothing in the timing path ever waits on Bluetooth.</text>
 </svg>
