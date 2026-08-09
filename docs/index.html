@@ -555,10 +555,16 @@ function load(){
 const cv = $("ring"), cx = cv.getContext("2d");
 let W=0,H=0,DPR=1;
 function sizeRing(){
-  DPR = Math.min(devicePixelRatio||1, 2.5);
   const r = cv.getBoundingClientRect();
-  W = r.width; H = r.height;
-  cv.width = W*DPR; cv.height = H*DPR;
+  // A page can lay out at zero: opened in a background tab, in a hidden
+  // iframe, or racing an add-to-home-screen launch. Bailing here (rather than
+  // writing a 0x0 canvas) keeps the last good size until real dimensions
+  // arrive, and the ResizeObserver below re-runs us the moment they do.
+  if(r.width < 1 || r.height < 1) return;
+  const dpr = Math.min(devicePixelRatio||1, 2.5);
+  if(r.width === W && r.height === H && dpr === DPR) return;
+  DPR = dpr; W = r.width; H = r.height;
+  cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR);
   cx.setTransform(DPR,0,0,DPR,0,0);
 }
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -1072,6 +1078,7 @@ $("btnTheme").onclick = ()=>{
    LOOP
    ========================================================================= */
 function frame(){
+  if(!W) sizeRing();          // last resort if the observer never fired
   const el = elapsed();
   let armFrac = 0;
   if(S.phase === "armed"){
@@ -1099,7 +1106,11 @@ $("sig").value = S.cfg.sig; $("rep").value = S.cfg.rep;
 $("tClip").setAttribute("aria-pressed", S.cfg.clipGate);
 $("tPar").setAttribute("aria-pressed", S.cfg.par);
 
-sizeRing(); addEventListener("resize", sizeRing);
+sizeRing();
+addEventListener("resize", sizeRing);
+// Catches the zero-size case above, plus orientation changes and the URL bar
+// collapsing on mobile scroll, neither of which reliably fires "resize".
+if(window.ResizeObserver) new ResizeObserver(sizeRing).observe(cv);
 renderDrills(); renderLog(); renderScore(); paint(); renderBars();
 frame();
 </script>
