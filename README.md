@@ -1,165 +1,357 @@
 <div align="center">
 
-# SPLIT
+![SPLIT — a shot timer for Pixel Watch 4](docs/banner.svg)
 
-**A shot timer for Pixel Watch 4.**
-The watch beeps, listens and times. The phone is a replica that shows you what happened.
+[![CI](https://github.com/GPTmadeit/split-shot-timer/actions/workflows/ci.yml/badge.svg)](https://github.com/GPTmadeit/split-shot-timer/actions/workflows/ci.yml)
+[![Security](https://github.com/GPTmadeit/split-shot-timer/actions/workflows/security.yml/badge.svg)](https://github.com/GPTmadeit/split-shot-timer/actions/workflows/security.yml)
+[![Release](https://img.shields.io/github/v/release/GPTmadeit/split-shot-timer?include_prereleases&sort=semver)](https://github.com/GPTmadeit/split-shot-timer/releases)
+[![License](https://img.shields.io/github/license/GPTmadeit/split-shot-timer)](LICENSE)
+[![Hardware tested](https://img.shields.io/badge/hardware_tested-no-FF4D4D)](#status-and-honest-limitations)
 
-[**▶ Try the browser prototype**](https://gptmadeit.github.io/split-shot-timer/) &nbsp;·&nbsp; [Why it works](#why-it-works-at-all) &nbsp;·&nbsp; [Architecture](#the-two-transports) &nbsp;·&nbsp; [Build](#build)
-
-![Wear OS 6](https://img.shields.io/badge/Wear_OS-6-FF5A1F?style=flat-square)
-![Android 16](https://img.shields.io/badge/Android-16_(API_36)-8B98A5?style=flat-square)
-![Kotlin](https://img.shields.io/badge/Kotlin-2.4.10-8B98A5?style=flat-square)
-![Compose](https://img.shields.io/badge/Compose-M3_Expressive-C89A2E?style=flat-square)
-![Build](https://img.shields.io/badge/gradlew_build-passing-3FD48B?style=flat-square)
-![Hardware](https://img.shields.io/badge/hardware_tested-no-FF4D4D?style=flat-square)
+**[▶ Try it in your browser](https://gptmadeit.github.io/split-shot-timer/)** · no install, works on a phone
 
 </div>
 
 ---
 
-## Why it works at all
+## What this is
 
-A 9mm at the shooter's ear runs **160–165 dB SPL**. The MEMS capsule in the watch clips at
-roughly **120–130 dB**. Every shot overdrives the microphone by 30–45 dB, so the amplitude
-coming off the ADC is meaningless — it is simply *railed*.
+A **shot timer** for the Pixel Watch 4 and a companion phone app.
 
-That does not matter, because a shot timer does not need a level. It needs an arrival time.
+A shot timer is the basic instrument of practical shooting. It beeps to start you, listens for
+your gunshots, and reports how long each one took — your *draw* (time to the first shot) and
+your *splits* (time between consecutive shots). Competitive shooters live by these numbers.
 
-And saturation turns out to be the best discriminator available: **your own muzzle rails the
-converter for milliseconds, while the shooter two bays over arrives ~30 dB down and never
-rails at all.** `clipGate` keys on exactly that, which is how this rejects neighbours when a
-plain energy threshold cannot.
+Dedicated timers cost $110–190, are one more thing to carry, and sit clipped to your belt where
+you cannot see them. **SPLIT puts the timer on your wrist**, and adds one thing no dedicated
+timer can do: it cross-checks each bang against a recoil impulse from the watch's accelerometer,
+so the shooter in the next bay does not end up in your string.
 
-Three details carry the accuracy:
+The watch is the instrument and the system of record. The phone is a durable replica for review
+and analysis. Neither depends on the other to function.
 
-| Concern | How it is handled |
+## Why a watch microphone can do this at all
+
+This is the question that decides whether the project is possible, so it is worth stating plainly.
+
+A 9mm at the shooter's ear runs **160–165 dB SPL**.<sup>[1](#references)</sup> The MEMS capsule
+in a watch clips at roughly **120–130 dB**.<sup>[2](#references)</sup> Every shot overdrives the
+microphone by 30–45 dB, so the amplitude coming off the converter is meaningless — it is simply
+*railed*.
+
+That does not matter, because **a shot timer does not need a level, it needs an arrival time.**
+
+Better still, the saturation is itself the most useful signal available. Your own muzzle rails
+the converter for milliseconds; a shooter two bays over arrives around 30 dB down and never rails
+at all. Gating on *how long the signal stayed railed* rejects neighbours in a way that a plain
+loudness threshold cannot.
+
+## Features
+
+| | |
 | --- | --- |
-| **Timing** | `AudioRecord.getTimestamp()` gives a `(framePosition, nanoTime)` anchor from the audio HAL. Sample times are interpolated from it, so resolution is **one sample** (20.8 µs @ 48 kHz), not one buffer (~10 ms). |
-| **Start instant** | `AudioTrack.getTimestamp()` rewound to frame 0 — the true moment the tone hit the speaker. First-shot time is a difference of two HAL timestamps, not two thread wakeups. |
-| **Gain** | `AudioSource.UNPROCESSED` where supported, else `VOICE_RECOGNITION`. With AGC live, gain ducks after round one and every subsequent split is measured through a moving target. |
+| **Sample-accurate timing** | Onset resolution of one sample — 20.8 µs at 48 kHz — rather than one audio buffer (~10 ms). |
+| **True start instant** | The clock starts when the tone physically leaves the speaker, not when a thread woke up. |
+| **AGC defeated** | Pins the rawest microphone source the device exposes, so gain does not duck after the first round. |
+| **Neighbour rejection** | Clip-run gating, plus an optional accelerometer recoil gate. |
+| **Nine drills** | Bill, Failure to Stop, F.A.S.T., 1‑Reload‑1, Blake, El Presidente, Casino, Dot Torture, Freestyle. |
+| **Enforced standards** | Shot count and par are enforced; the string auto-stops and grades itself. |
+| **Split analysis** | Draw, every split, fastest, slowest, and split σ — the number that says whether you shot a cadence or got lucky once. |
+| **USPSA hit factor** | Minor/major scoring with A/C/D/M/NS entry. |
+| **Works out of range** | Completed strings are written on the watch first and sync to the phone whenever Bluetooth returns. |
+| **Haptic start** | A wrist buzz cuts through hearing protection when a watch speaker does not. |
+| **Auto-repeat** | Re-arms itself so you can run reps without touching the watch. |
 
-`RecoilGate` is the part a dedicated timer cannot do: correlate the report against a wrist
-impulse from the accelerometer within ±40 ms. **Ships off** — see the caveats in
-[`RecoilGate.kt`](wear/src/main/java/com/carlb/split/wear/sensor/RecoilGate.kt) before
-trusting it.
+## Requirements
 
----
+**To use the browser prototype:** any modern browser. Microphone detection needs HTTPS, which
+the hosted link provides.
 
-## The two transports
+**To build and install the apps:**
+
+| | |
+| --- | --- |
+| JDK | 17 |
+| Android SDK | Platform **36**, build-tools 36.0.0 |
+| Watch | Wear OS 6 (API 36); `minSdk` is 30 |
+| Phone | Android 10+ (`minSdk` 29) |
+| Gradle | Wrapper included — do not install Gradle separately |
+
+> **Note on `compileSdk`:** this project pins `compileSdk 36` and holds several dependencies
+> back to match. Platform 37 is not published in the SDK manager yet. See
+> [Version pinning](#version-pinning--read-before-upgrading).
+
+## Quick start
+
+### The fastest path — no install
+
+Open **<https://gptmadeit.github.io/split-shot-timer/>** on your phone. Tap the face (or press
+space on a desktop) to log shots by hand, or grant microphone access to detect live fire. Add it
+to your home screen and it runs full-screen.
+
+### Install the apps
+
+Download the APKs from the [latest release](https://github.com/GPTmadeit/split-shot-timer/releases/latest):
+
+```bash
+adb -s <watch-serial> install -r split-wear-<version>-debug.apk
+adb -s <phone-serial> install -r split-mobile-<version>-debug.apk
+```
+
+Run `adb devices` to list serials. The release APKs are **debug-signed** — fine for sideloading,
+not for Play distribution.
+
+### Build from source
+
+```bash
+git clone https://github.com/GPTmadeit/split-shot-timer.git
+```
+
+```bash
+cd split-shot-timer && ./gradlew :wear:assembleDebug :mobile:assembleDebug
+```
+
+APKs land in `wear/build/outputs/apk/debug/` and `mobile/build/outputs/apk/debug/`.
+
+## Usage
+
+### Your first string
+
+1. Open **SPLIT** on the watch and grant microphone access. It must be granted while the app is
+   open — that is an Android rule for microphone foreground services, not a choice made here.
+2. Tap the drill name at the top to pick a drill. Start with **Freestyle** (no shot cap, no par).
+3. Press **START**. The bezel fills brass and counts down a random 1–4 second delay so you
+   cannot anticipate the beep.
+4. On the tone, shoot. Each detected shot burns an orange tick into the bezel and updates the
+   readout.
+5. The string ends when you press **STOP**, or automatically on the last shot of a drill with a
+   fixed count.
+
+### Reading the face
+
+The bezel is a time tape. The acoustic envelope draws inward from the band; each shot burns a
+tick outward at its angular position in the string. **By the end of a run the ring is the
+string** — you read your cadence at a glance without parsing digits, which matters when your
+eyes belong on the target.
+
+Under the clock: `DRAW` (time to first shot), `SPLIT` (live time since the last shot), and
+`SHOTS` (count, or count/target on a fixed drill).
+
+### Calibrating — do this before your first live string
+
+Swipe to **Settings** and watch the level meter while the range is active around you.
+
+1. Turn **sensitivity** down until ambient range noise stops lighting the meter past the brass
+   marker.
+2. Leave **clip gate** on. It requires the converter to actually rail, which is what rejects
+   the bay next to you.
+3. Lower **echo blanking** if you shoot splits faster than the current dead time. Indoor ranges
+   need more blanking; outdoors you can go lower.
+
+### On the phone
+
+Completed strings appear automatically. Tap a string to expand it for split bars and USPSA
+scoring. A rosette badge marks your best draw of the session, and the trend chart tracks draw
+time across strings.
+
+If the watch is in range while you shoot, the phone mirrors the running string live. If it is
+not, nothing is lost — the strings arrive when the link returns.
+
+## Configuration
+
+All settings live on the watch, under Settings.
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| Sensitivity | −22 dBFS | Onset threshold. Lower = less sensitive. |
+| Clip gate | On | Require the converter to rail. Rejects distant gunfire. |
+| Recoil gate | **Off** | Require a matching wrist impulse. See the warning below. |
+| Echo blanking | 60 ms | Dead time after each shot, to reject reverb. |
+| Start delay | Random 1–4 s | Also: instant, random 2–5 s, fixed 3 s. |
+| Start signal | Beep + haptic | Haptic-only is useful in muffs. |
+| Par tone | On | Second tone at the drill's par time. |
+| Auto-repeat | Off | Re-arm automatically after 5/8/12 s. |
+
+> [!WARNING]
+> **The recoil gate ships off, deliberately.** Recoil transfer depends on grip and on which
+> wrist wears the watch. Support hand on a two-handed grip reads cleanly; strong hand reads
+> harder; a one-handed string on the off hand may read nothing at all. Rimfire and heavily
+> buffered PCCs may fall under the threshold entirely. Turn it on only after you have verified
+> it against your own gun.
+
+## Troubleshooting
+
+**Shots are being missed.**
+Raise sensitivity (a less negative dB value). If you shoot suppressed, turn the **clip gate
+off** — a suppressed host can sit below the microphone's clipping point, so there is no rail
+to detect.
+
+**More shots recorded than fired.**
+Indoor reverb is being counted as extra shots. Raise echo blanking to 90 or 130 ms. If the very
+first "shot" is spurious, the start tone is leaking in — file an issue, that is a bug.
+
+**The neighbouring bay is registering.**
+Turn the clip gate on, and lower sensitivity. If it persists and you shoot two-handed with the
+watch on your support wrist, try the recoil gate.
+
+**Nothing is detected at all.**
+Check Settings shows a source and sample rate (e.g. `UNPROCESSED @ 48000 Hz`). If it says the
+mic is off, the permission was denied — reopen the app and grant it.
+
+**Strings are not reaching the phone.**
+Both apps must be installed and the watch paired. Strings are held on the watch and sync when
+the link returns, so give it a moment after you are back in range. Nothing is lost in the
+meantime.
+
+**The browser page renders tiny, or the ring is blank.**
+Reload it. If it persists, open an issue with your browser and OS.
+
+**Gradle fails with "requires Android Gradle plugin 9.x" or "compile against version 37".**
+A dependency has been bumped past what this project pins. See
+[Version pinning](#version-pinning--read-before-upgrading).
+
+## FAQ
+
+**Does this work on other Wear OS watches?**
+It should build and run on any Wear OS 5+ device with a microphone (`minSdk 30`), but it has
+only ever been reasoned about for the Pixel Watch 4 and has not been run on any hardware at all.
+
+**Do I need the phone app?**
+No. The watch app is standalone and declares itself as such. The phone app adds review,
+trend analysis and hit factor scoring.
+
+**Is it as accurate as a CED7000 or PACT timer?**
+Unknown, and anyone claiming otherwise without measurements is guessing. The *timing method*
+here resolves to one audio sample, which is far finer than the 0.01 s these timers display. But
+resolution is not accuracy: end-to-end accuracy depends on hardware latencies that have not been
+measured. Treat it as unverified until it is characterised.
+
+**Why does it need microphone permission all the time?**
+It does not. The microphone foreground service can only be started while the app is open, and
+it stops when you leave. There is no background listening.
+
+**Does it record or upload audio?**
+No. Audio is analysed sample-by-sample in memory and discarded. Nothing is written to disk and
+there is no network code in either app.
+
+**Why is the release a pre-release?**
+Because nothing has been tested on hardware. See [Status](#status-and-honest-limitations).
+
+**Can I use this in a match?**
+No. Use a certified timer. This is a practice tool.
+
+## Architecture
 
 ![Architecture](docs/architecture.svg)
 
-This is the core architectural decision, and it is driven by how a range actually works:
-your phone is in a bag on the bench and Bluetooth drops constantly.
-
-- **`MessageClient` → `/split/live`** — low latency, best effort, silently dropped when the
-  link is down. Used *only* to mirror a running string. Nothing the timer needs travels here.
-- **`DataClient` → `/split/string/<id>`** — replicated and durable. A string written while
-  the phone is out of range syncs the moment it returns. The receiver is a
-  `WearableListenerService`, so strings land even if the phone app was never opened.
-
-The watch writes to its own store **before** it attempts to reach the phone. The watch is the
-system of record; the phone is a replica.
-
----
-
-## The face
-
-The bezel is the instrument. The acoustic envelope draws inward from the band, and every
-detected shot burns a tick outward at its angular position in the string. By the end of a run
-**the ring _is_ the string** — you read cadence at a glance without parsing digits, which is
-the point when the watch is on your wrist and your eyes are on the target.
-
-Motion is physics, not duration curves. The start tone fires a shockwave on
-`spring(dampingRatio = 0.34)`; each shot kicks the ring independently at `0.45` so a fast
-split stacks on the previous kick rather than cancelling it. The whole face runs off a single
-`withFrameNanos` loop rather than recomposing per tick.
-
-The phone uses `MotionScheme.expressive()` throughout, a `graphics-shapes` `Morph`
-(circle → rosette) on the personal-best badge that only animates when the string *is* a best,
-staggered spring entry on split bars, and a self-drawing trend path.
-
----
-
-## Modules
+Three modules:
 
 ```
-core/     models + the watch↔phone wire contract
-wear/     the instrument: mic, tone, clock, state machine   (com.carlb.split)
-mobile/   the replica: receiver, log, analysis              (com.carlb.split)
-docs/     browser prototype of the same detector and UI
+core/     models and the watch↔phone wire contract  (pure Kotlin, unit tested)
+wear/     the instrument: mic, tone, clock, state machine
+mobile/   the replica: receiver, log, analysis
+docs/     browser prototype and diagrams
 ```
 
-Both apps share one `applicationId`. That is deliberate — Play uses it to deliver the watch
-APK to a paired watch when the phone app installs. Upload both to the same Play Console app;
-the watch build goes in the Wear OS track. No Gradle-side embedding is involved.
+Two transports, deliberately different, because at a range your phone is in a bag on the bench
+and Bluetooth drops constantly:
 
-## Drills
+- **`MessageClient` → `/split/live`** — low latency, best effort, silently dropped when the link
+  is down. Mirrors a running string. Nothing the timer needs travels here.
+- **`DataClient` → `/split/string/<id>`** — replicated and durable. Survives the phone being out
+  of range for an entire session.
 
-Bill Drill · Failure to Stop · F.A.S.T. · 1‑Reload‑1 · Blake · El Presidente · Casino ·
-Dot Torture · Freestyle
+Full detail, including the timing method and the reasoning behind each detector constant, is in
+[ARCHITECTURE.md](ARCHITECTURE.md).
 
-Shot count and par are enforced: the string auto-stops on the last shot and grades against
-the standard. Split σ is reported alongside the fastest and slowest split, because
-consistency is the number that says whether you are shooting a cadence or got lucky once.
-
----
-
-## Build
+## Development
 
 ```bash
-./gradlew :wear:assembleDebug :mobile:assembleDebug
+./gradlew build
 ```
 
-```bash
-adb -s <watch-serial> install -r wear/build/outputs/apk/debug/wear-debug.apk
-```
+That compiles both apps for debug and release, runs the unit tests, and runs Android Lint.
+
+| Task | Command |
+| --- | --- |
+| Unit tests | `./gradlew testDebugUnitTest` |
+| Android Lint | `./gradlew lintDebug` |
+| Assemble APKs | `./gradlew :wear:assembleDebug :mobile:assembleDebug` |
+| Kotlin formatting | see [CONTRIBUTING.md](CONTRIBUTING.md#formatting) |
+
+Reports land in `*/build/reports/`.
 
 ### Version pinning — read before upgrading
 
-Versions in [`gradle/libs.versions.toml`](gradle/libs.versions.toml) are **not** "latest".
-They are the newest stable releases whose AAR metadata still permits `compileSdk 36` /
-AGP 8.13.2. Anything newer gates on `compileSdk 37`, which is not published in the SDK manager
-yet. These were verified by reading `aar-metadata.properties` out of each artifact, not by
-guessing.
+Versions in [`gradle/libs.versions.toml`](gradle/libs.versions.toml) are **not** "latest". They
+are the newest stable releases whose AAR metadata still permits `compileSdk 36` / AGP 8.13.2.
+Anything newer gates on `compileSdk 37`, which is not published in the SDK manager yet. These
+were determined by reading `aar-metadata.properties` out of each artifact, not by guessing.
 
-One deliberate exception: `material3` is pinned to **1.5.0-alpha18**. `MaterialExpressiveTheme`,
-`MotionScheme` and friends exist in 1.4.0 stable but are compiled `internal` there, so the
-Expressive API is unreachable. alpha18 is the newest build that exposes it publicly *and*
-still allows compileSdk 36. Revisit once platform 37 ships.
+One deliberate exception: `material3` is pinned to **1.5.0-alpha18**. `MaterialExpressiveTheme`
+and `MotionScheme` exist in 1.4.0 stable but are compiled `internal` there, so the Material 3
+Expressive API is unreachable. alpha18 is the newest build that exposes it publicly *and* still
+allows `compileSdk 36`.
 
----
+Dependabot will open PRs that bump past these pins. Those PRs are expected to fail CI until
+platform 37 ships — that failure is the intended signal, not a broken pipeline.
 
-## Status
+## Status and honest limitations
 
-`./gradlew build` passes clean — debug and release, both modules, Android Lint reporting **no
-issues** on `:wear` and `:mobile`. Manifests verified against the packaged APKs
-(`foregroundServiceType` = microphone, standalone watch app, matching applicationIds,
-fully-qualified component names).
-
-The 10 remaining warnings on `:core` are all `GradleDependency` / `AndroidGradlePluginVersion`
-notices about the version pins above. Taking any of them breaks the build until platform 37
-ships.
+`./gradlew build` passes clean: both modules compile for debug and release, **42 unit tests**
+pass, and Android Lint reports no issues on `:wear` or `:mobile`. Manifests are verified against
+the packaged APKs. CI runs all of this on every push.
 
 > [!WARNING]
-> **Nothing has been run on hardware, and no live fire has been recorded through it.**
-> The detector constants — clip-run length, blanking, and the recoil window and threshold —
-> are reasoned starting points, not measured ones. Expect to characterise them against your
-> own gun and your own range before trusting a number this produces.
+> **Nothing has been run on real hardware, and no live fire has ever been recorded through it.**
+> The four detector constants are reasoned starting points, not measurements:
+>
+> | Constant | Value | Basis |
+> | --- | --- | --- |
+> | Clip-run threshold | 3 samples | estimate |
+> | Echo blanking | 60 ms | estimate |
+> | Recoil window | ±40 ms | estimate |
+> | Recoil threshold | 18 m/s² | estimate |
+>
+> Expect to characterise all four against your own firearm and range. If you do, please
+> [tell us](https://github.com/GPTmadeit/split-shot-timer/issues/new?template=detection_accuracy.yml) —
+> that is the single most valuable contribution this project can receive.
 
-### Browser prototype
+Other known limitations:
 
-[**gptmadeit.github.io/split-shot-timer**](https://gptmadeit.github.io/split-shot-timer/) —
-the same detection approach in Web Audio, useful for sanity-checking drill flow. Works on a
-phone; add it to your home screen and it runs chromeless. Grant microphone access for live
-detection, or tap the face (spacebar on desktop) to log shots by hand.
+- The browser prototype cannot truly pin an unprocessed audio source. Browsers apply AGC and
+  noise suppression by default and the page can only *request* they be disabled.
+- There are no instrumented (on-device) tests. Unit tests cover `:core` logic only; the audio,
+  sensor and UI layers are untested by machine.
+- Release APKs are debug-signed. Play distribution requires your own signing key.
 
-Note that browsers apply AGC and noise suppression by default, which crushes gunshot
-transients; the page requests them off, but a native build is the only way to truly pin
-`UNPROCESSED`.
+## Contributing
 
----
+Contributions are welcome — especially real-world detection data. Start with
+[CONTRIBUTING.md](CONTRIBUTING.md). By participating you agree to the
+[Code of Conduct](CODE_OF_CONDUCT.md).
 
-<sub>No licence file is included, so default copyright applies — add one if you want others to
-reuse this.</sub>
+## Security
+
+Please do not open public issues for vulnerabilities. See [SECURITY.md](SECURITY.md) for private
+reporting. Both apps are offline by design: no network permission, no telemetry, no audio
+retention.
+
+## Support
+
+Questions and setup help: [SUPPORT.md](SUPPORT.md).
+
+## Licence
+
+[MIT](LICENSE).
+
+## References
+
+1. Gunshot sound pressure levels at the shooter's position —
+   [Wideners](https://www.wideners.com/blog/how-loud-is-a-gunshot/),
+   [Silencer Shop](https://www.silencershop.com/blog/what-does-gunshot-sound-like).
+2. MEMS microphone acoustic overload point —
+   [Cirrus Logic AN0290](https://www.mouser.com/catalog/additional/Cirrus%20Logic_WAN0290_v1.0.pdf),
+   [Infineon](https://community.infineon.com/t5/Knowledge-Base-Articles/MEMS-microphone-specifications/ta-p/696839).
+
+<sub>Not affiliated with Google. Pixel and Wear OS are trademarks of Google LLC.</sub>
