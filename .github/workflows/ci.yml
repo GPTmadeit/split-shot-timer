@@ -120,6 +120,111 @@ jobs:
             --reporter=plain \
             "**/src/**/*.kt" "**/*.gradle.kts"
 
+  smoke:
+    name: Launch smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: build
+
+    # Both apps built, linted and unit-tested clean while still crashing on
+    # launch: a SecurityException from an undeclared permission is invisible to
+    # every static check. This job installs the APKs on a real emulator and
+    # asserts the process is still alive afterwards.
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v5
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Install, launch, assert alive
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: default
+          arch: x86_64
+          disable-animations: true
+          script: |
+            set -e
+            ./gradlew :wear:assembleDebug :mobile:assembleDebug
+
+            check() {
+              pkg=com.carlb.split
+              apk=$1; activity=$2; label=$3
+              adb uninstall $pkg >/dev/null 2>&1 || true
+              adb install -r "$apk"
+              adb shell pm grant $pkg android.permission.RECORD_AUDIO || true
+              adb shell pm grant $pkg android.permission.POST_NOTIFICATIONS || true
+              adb logcat -c
+              adb shell am start -n "$pkg/$activity"
+              sleep 12
+              if adb logcat -d -s AndroidRuntime:E | grep -q "FATAL EXCEPTION"; then
+                echo "::error::$label crashed on launch"
+                adb logcat -d -s AndroidRuntime:E | head -40
+                exit 1
+              fi
+              if [ -z "$(adb shell pidof $pkg | tr -d '\r')" ]; then
+                echo "::error::$label process died after launch"
+                adb logcat -d | tail -60
+                exit 1
+              fi
+              echo "$label: alive after launch"
+            }
+
+            check wear/build/outputs/apk/debug/wear-debug.apk \
+                  com.carlb.split.wear.MainActivity "watch app"
+            check mobile/build/outputs/apk/debug/mobile-debug.apk \
+                  com.carlb.split.mobile.MainActivity "phone app"
+
+  signing:
+    name: Signing key is stable
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    # Releases have to install over each other. AGP will happily fall back to a
+    # per-machine ~/.android/debug.keystore, which silently makes every CI build
+    # a different signer and breaks upgrades with INSTALL_FAILED_UPDATE_INCOMPATIBLE.
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v5
+
+      - name: Assemble and compare signers
+        run: |
+          set -e
+          ./gradlew :wear:assembleDebug :mobile:assembleDebug
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          fp() {
+            "$BT/apksigner" verify --print-certs "$1" \
+              | grep -oE "SHA-256 digest: [0-9a-f]+" | head -1 | awk '{print $NF}'
+          }
+          w=$(fp wear/build/outputs/apk/debug/wear-debug.apk)
+          m=$(fp mobile/build/outputs/apk/debug/mobile-debug.apk)
+          echo "wear:   $w"
+          echo "mobile: $m"
+          if [ "$w" != "$EXPECTED" ] || [ "$m" != "$EXPECTED" ]; then
+            echo "::error::signing key drifted -- releases will not install over each other"
+            exit 1
+          fi
+          echo "both match the committed sideload key"
+        env:
+          EXPECTED: df77d1c4b268ef6996265513d4e94cbc173333801c15ceddda70742456d6a127
+
   html:
     name: Validate browser prototype
     runs-on: ubuntu-latest
