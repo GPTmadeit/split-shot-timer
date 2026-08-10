@@ -10,6 +10,46 @@ change in any minor release.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-10
+
+### Fixed
+
+- **The watch and phone never actually linked.** The watch looked up the
+  capability `split_timer_phone` to find the phone, but neither app declared any
+  capability at all, so the lookup always returned an empty node set and
+  `sendLive()` bailed on every call. The live mirror has never worked in any
+  released build. Both apps now declare their capability in
+  `res/values/wear.xml`.
+
+  Completed strings were unaffected: `DataClient` replicates to all nodes and
+  needs no capability, so the durable sync was always fine. It was only the live
+  view that was dead.
+
+- Node resolution is no longer a one-shot at start-up. A `CapabilityClient`
+  listener keeps the phone node current as it comes and goes, there is a
+  `NodeClient.getConnectedNodes()` fallback for when the phone app has not run
+  since install, and a failed send re-resolves so the next string has a chance.
+
+### Changed
+
+- **The microphone is no longer held for the whole session.** It used to open
+  when the app launched and stay open until it closed, so a 48 kHz capture and a
+  max-priority DSP thread ran the entire time the watch sat on READY doing
+  nothing. It is now acquired when a string is armed and dropped when it ends,
+  with a separate hold while the calibration meter is on screen. Auto-repeat
+  keeps it warm between reps rather than tearing down `AudioRecord` and
+  rebuilding it seconds later.
+- **The UI frame loop stops when nothing is moving.** It previously ran a
+  full-rate canvas redraw forever, including on a completely static idle face.
+  It now runs only while armed or running, plus a short settle after a string so
+  the last spring finishes.
+- The ongoing notification says "Range session" rather than "Timer listening",
+  which is no longer true when the mic is closed.
+- **New app icon** in the Pixel system style: adaptive, flat single-colour
+  ground, one simple geometric mark, well inside the 72 dp safe zone so neither
+  the Wear circular mask nor the Pixel squircle clips it. Includes a monochrome
+  layer, so themed icons on Pixel launchers tint it with the wallpaper.
+
 ## [0.4.0] - 2026-08-10
 
 Both apps now look like they belong on their platform instead of wearing a
@@ -219,7 +259,8 @@ First pre-release.
 - `compileSdk` pinned at 36 with dependencies held back to match, because platform 37 is not yet
   published.
 
-[Unreleased]: https://github.com/GPTmadeit/split-shot-timer/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/GPTmadeit/split-shot-timer/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/GPTmadeit/split-shot-timer/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/GPTmadeit/split-shot-timer/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/GPTmadeit/split-shot-timer/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/GPTmadeit/split-shot-timer/compare/v0.2.0...v0.2.1

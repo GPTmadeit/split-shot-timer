@@ -107,6 +107,12 @@ drops constantly.
 | Delivery | Best effort, dropped if disconnected | Replicated, syncs when the link returns |
 | If it fails | Nothing is lost — a late mirror is worthless anyway | Cannot fail; that is the point |
 
+Both apps declare a capability in `res/values/wear.xml` (`split_timer_watch` /
+`split_timer_phone`). This is not optional decoration: `CapabilityClient` is how
+each side finds the other, and with no declaration the lookup returns an empty
+node set and the live link silently never forms. `DataClient` does not need it,
+which is why completed strings synced while the live mirror was dead.
+
 **The watch writes to its own store before it attempts to reach the phone.** The watch is the
 system of record; the phone is a replica. Nothing in the timing path ever awaits a network call
 — `WearSync.sendLive()` is fire-and-forget by construction.
@@ -177,6 +183,22 @@ report "no updates" forever. There is a test pinning that behaviour.
 
 Installation is deliberately not automatic. The APK goes to app-private cache, is exposed through
 a `FileProvider` one-shot grant, and is handed to the platform installer, which asks the user.
+
+## Resource discipline
+
+The watch is a battery with a screen attached, so nothing runs that does not
+need to:
+
+| Resource | Held when |
+| --- | --- |
+| Microphone + DSP thread | A string is armed or running, or the calibration meter is on screen |
+| Accelerometer | Only when the recoil gate is enabled |
+| UI frame loop | Only while armed or running, plus ~700 ms of settle |
+| Wake lock | For the session |
+
+The mic is reference counted (`holdMic` / `releaseMic`) because two independent
+things want it. Auto-repeat deliberately keeps it open between reps rather than
+rebuilding `AudioRecord` every few seconds.
 
 ## Storage
 
