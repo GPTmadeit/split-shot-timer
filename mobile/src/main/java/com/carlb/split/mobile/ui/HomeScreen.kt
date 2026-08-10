@@ -55,13 +55,7 @@ import java.util.Date
 import java.util.Locale
 
 @Composable
-fun HomeScreen(
-    strings: List<ShotString>,
-    live: LiveMirror,
-    onScore: (String, Double, String) -> Unit,
-    updateAvailable: Boolean,
-    onOpenMenu: () -> Unit,
-) {
+fun HomeScreen(strings: List<ShotString>, live: LiveMirror, onScore: (String, Double, String) -> Unit) {
     val cs = MaterialTheme.colorScheme
     val bestDraw = strings.mapNotNull { it.first }.minOrNull()
 
@@ -70,8 +64,6 @@ fun HomeScreen(
         contentPadding = PaddingValues(16.dp, 28.dp, 16.dp, 40.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item { Header(live, updateAvailable, onOpenMenu) }
-
         item {
             AnimatedVisibility(
                 visible = live !is LiveMirror.Offline,
@@ -137,42 +129,6 @@ fun HomeScreen(
     }
 }
 
-@Composable
-private fun Header(live: LiveMirror, updateAvailable: Boolean, onOpenMenu: () -> Unit) {
-    val cs = MaterialTheme.colorScheme
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            "SPLIT",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Black,
-            letterSpacing = 5.sp,
-            color = cs.onBackground,
-        )
-        Spacer(Modifier.weight(1f))
-        val connected = live !is LiveMirror.Offline
-        val dot by animateColorAsState(
-            if (connected) cs.primary else cs.outline,
-            label = "dot",
-        )
-        if (connected) {
-            LivePulse(cs.primary, Modifier.size(14.dp))
-        } else {
-            Box(Modifier.size(7.dp).clip(RoundedCornerShape(50)).background(dot))
-        }
-        Spacer(Modifier.width(8.dp))
-        Text(
-            if (connected) "WATCH LIVE" else "WATCH IDLE",
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 1.4.sp,
-            color = if (connected) cs.primary else cs.onSurfaceVariant,
-        )
-        Spacer(Modifier.width(10.dp))
-        MenuButton(hasBadge = updateAvailable, onClick = onOpenMenu)
-    }
-}
-
-/** Mirrors the running string. Best-effort by design — it is a view, not a record. */
 @Composable
 private fun LiveCard(live: LiveMirror) {
     val cs = MaterialTheme.colorScheme
