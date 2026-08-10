@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!--
+      Advertises this node to the paired device. Without a declaration the other
+      side's CapabilityClient lookup returns an empty node set and the live link
+      silently never forms, which is exactly what happened before this existed.
+
+      Lint cannot see the reference because Google Play Services reads this at
+      runtime rather than through R.
+    -->
+    <string-array name="android_wear_capabilities" tools:ignore="UnusedResources">
+        <item>split_timer_phone</item>
+    </string-array>
+</resources>
