@@ -10,6 +10,50 @@ change in any minor release.
 
 ## [Unreleased]
 
+## [0.2.1] — 2026-08-09
+
+The watch app did not open. It does now, and releases can finally install over
+each other. Both problems were verified on a Wear OS 6 emulator rather than
+reasoned about.
+
+> [!IMPORTANT]
+> **Upgrading from v0.1.0 or v0.2.0 requires uninstalling first.** Those builds
+> were signed with a throwaway key, so Android rejects this one with
+> `INSTALL_FAILED_UPDATE_INCOMPATIBLE`. Uninstall, install v0.2.1, and every
+> future update installs in place. This is a one-time break.
+
+### Fixed
+
+- **The watch app crashed instantly on launch.** `RecoilGate` registered the
+  accelerometer at `SENSOR_DELAY_FASTEST` (0 µs). Since Android 12 any rate
+  above 200 Hz requires `HIGH_SAMPLING_RATE_SENSORS`, which was not declared,
+  so `registerListener` threw `SecurityException` out of the foreground
+  service. `START_STICKY` then restarted the service straight back into the
+  same crash, so the app appeared to open and vanish. The permission is now
+  declared, the service is `START_NOT_STICKY`, and the sensor call cannot throw.
+- **Releases could not be installed as updates.** Every CI run generated a fresh
+  `~/.android/debug.keystore`, so each release was signed by a different key and
+  Android refused the upgrade. Builds now use a committed, deliberately public
+  sideload key, so all future artifacts share one signer.
+- The recoil gate started the accelerometer even though it ships **off**. An
+  optional, disabled feature could take down the whole timer. It is now started
+  only when enabled, degrades to a slower sampling rate if the fast rate is
+  refused, and reports itself unavailable rather than failing.
+- `TimerService.startSession()` now enters the foreground before anything that
+  can fail, so a later error cannot get the process killed for failing to post
+  its notification in time.
+
+### Added
+
+- **Emulator smoke test in CI** — installs both APKs on a real emulator,
+  launches them, and fails if the process dies or logs a fatal exception. Every
+  static check passed while the app was crash-looping; only running it caught
+  this.
+- **Signing-key stability check in CI** — fails the build if the APK signer
+  drifts from the committed key, which is what silently broke updates.
+- `signing/split-debug.keystore`, with a narrow `.gitignore` exception. All
+  other keystores stay ignored.
+
 ## [0.2.0] — 2026-08-09
 
 Repository and quality release. No functional change to detection, timing, or the apps'
@@ -92,6 +136,7 @@ First pre-release.
 - `compileSdk` pinned at 36 with dependencies held back to match, because platform 37 is not yet
   published.
 
-[Unreleased]: https://github.com/GPTmadeit/split-shot-timer/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/GPTmadeit/split-shot-timer/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/GPTmadeit/split-shot-timer/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/GPTmadeit/split-shot-timer/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/GPTmadeit/split-shot-timer/releases/tag/v0.1.0

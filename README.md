@@ -6,7 +6,8 @@
 [![Security](https://github.com/GPTmadeit/split-shot-timer/actions/workflows/security.yml/badge.svg)](https://github.com/GPTmadeit/split-shot-timer/actions/workflows/security.yml)
 [![Release](https://img.shields.io/github/v/release/GPTmadeit/split-shot-timer?include_prereleases&sort=semver)](https://github.com/GPTmadeit/split-shot-timer/releases)
 [![License](https://img.shields.io/github/license/GPTmadeit/split-shot-timer)](LICENSE)
-[![Hardware tested](https://img.shields.io/badge/hardware_tested-no-FF4D4D)](#status-and-honest-limitations)
+[![Emulator verified](https://img.shields.io/badge/emulator-launches-3FD48B)](#status-and-honest-limitations)
+[![Live fire tested](https://img.shields.io/badge/live_fire_tested-no-FF4D4D)](#status-and-honest-limitations)
 
 **[▶ Try it in your browser](https://gptmadeit.github.io/split-shot-timer/)** · no install, works on a phone
 
@@ -97,11 +98,33 @@ Download the APKs from the [latest release](https://github.com/GPTmadeit/split-s
 
 ```bash
 adb -s <watch-serial> install -r split-wear-<version>-debug.apk
+```
+
+```bash
 adb -s <phone-serial> install -r split-mobile-<version>-debug.apk
 ```
 
-Run `adb devices` to list serials. The release APKs are **debug-signed** — fine for sideloading,
-not for Play distribution.
+Run `adb devices` to list serials. The two apps share an `applicationId`, so **install the watch
+APK on the watch and the phone APK on the phone** — putting both on one device replaces one with
+the other.
+
+> [!IMPORTANT]
+> **Coming from v0.1.0 or v0.2.0? Uninstall first.** Those releases were each signed with a
+> different throwaway key, so Android rejects the upgrade with
+> `INSTALL_FAILED_UPDATE_INCOMPATIBLE`. From v0.2.1 onward every build shares one committed
+> signing key, so updates install in place normally. This is a one-time break.
+
+### Updating
+
+Later releases install straight over the top — no uninstall, settings and logged strings are kept:
+
+```bash
+adb install -r split-wear-<newer-version>-debug.apk
+```
+
+The release APKs are **debug-signed** with a key committed to this repository. That makes updates
+work, but it is not an authenticity guarantee — anyone can sign an APK with it. Verify downloads
+against the `SHA256SUMS.txt` published with each release.
 
 ### Build from source
 
@@ -208,6 +231,16 @@ meantime.
 **The browser page renders tiny, or the ring is blank.**
 Reload it. If it persists, open an issue with your browser and OS.
 
+**`INSTALL_FAILED_UPDATE_INCOMPATIBLE` when installing.**
+You have v0.1.0 or v0.2.0 installed, which used a different signing key. Uninstall the old
+version first — `adb uninstall com.carlb.split` — then install again. Updates from v0.2.1 onward
+work in place.
+
+**The watch app opens and immediately closes.**
+That was a real bug in v0.1.0 and v0.2.0: an undeclared sensor permission crashed the foreground
+service, and the service kept restarting into the same crash. Fixed in v0.2.1. If you see it on
+v0.2.1 or later, please file a bug with `adb logcat -d -s AndroidRuntime:E`.
+
 **Gradle fails with "requires Android Gradle plugin 9.x" or "compile against version 37".**
 A dependency has been bumped past what this project pins. See
 [Version pinning](#version-pinning--read-before-upgrading).
@@ -304,8 +337,14 @@ platform 37 ships — that failure is the intended signal, not a broken pipeline
 pass, and Android Lint reports no issues on `:wear` or `:mobile`. Manifests are verified against
 the packaged APKs. CI runs all of this on every push.
 
+Both apps have also been **installed and launched on a Wear OS 6 (API 36) emulator**: the watch
+app starts, holds its microphone foreground service, arms, plays the start tone and runs the
+clock. CI repeats that install-and-launch check on every push, because every static check above
+passed while the app was still crash-looping on launch.
+
 > [!WARNING]
-> **Nothing has been run on real hardware, and no live fire has ever been recorded through it.**
+> **No live fire has ever been recorded through this code, and it has not run on a physical
+> watch.** An emulator has no microphone worth the name and no gunshots.
 > The four detector constants are reasoned starting points, not measurements:
 >
 > | Constant | Value | Basis |
