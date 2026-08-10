@@ -4,7 +4,7 @@
 # aar-metadata.properties out of each artifact, not by guessing.
 
 [versions]
-agp = "8.13.2"
+agp = "9.3.1"
 kotlin = "2.4.10"
 coreKtx = "1.18.0"
 lifecycle = "2.10.0"
