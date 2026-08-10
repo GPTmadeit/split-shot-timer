@@ -60,7 +60,7 @@ class TimerService : LifecycleService() {
         lifecycleScope.launch {
             sync.connected.collect { engine.setPhoneConnected(it) }
         }
-        sync.refreshNodes()
+        sync.start()
     }
 
     private fun persistAndPublish(s: ShotString) {
@@ -114,9 +114,10 @@ class TimerService : LifecycleService() {
             }
         }.onFailure { Log.w(TAG, "wake lock unavailable", it) }
 
-        // Each of these is individually non-fatal. The timer is still usable
-        // without the phone link, and the UI surfaces a mic failure itself.
-        runCatching { engine.openMic() }.onFailure { Log.e(TAG, "openMic failed", it) }
+        // Deliberately does NOT open the microphone. The engine acquires it
+        // when a string is armed and drops it afterwards; opening here meant a
+        // 48 kHz capture and a max-priority DSP thread ran for the entire time
+        // the app was on screen, doing nothing.
         runCatching { sync.refreshNodes() }.onFailure { Log.w(TAG, "node lookup failed", it) }
     }
 
@@ -146,7 +147,8 @@ class TimerService : LifecycleService() {
         )
         return Notification.Builder(this, CHANNEL)
             .setContentTitle("Range session")
-            .setContentText("Timer listening")
+            // Not "listening": the mic is only open during a string.
+            .setContentText("Range session")
             .setSmallIcon(R.drawable.ic_timer)
             .setContentIntent(open)
             .setOngoing(true)
@@ -154,6 +156,7 @@ class TimerService : LifecycleService() {
     }
 
     override fun onDestroy() {
+        sync.stop()
         engine.release()
         wakeLock?.let { if (it.isHeld) it.release() }
         super.onDestroy()

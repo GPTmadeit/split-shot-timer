@@ -72,8 +72,14 @@ fun TimerFace(state: TimerUiState, elapsedProvider: () -> Double, modifier: Modi
     }
     LaunchedEffect(isRunning) { if (isRunning) startPulse++ }
 
+    // Frames are only produced while something actually moves. Previously this
+    // ran a full-rate canvas redraw forever, including while the watch sat on
+    // READY with a static face.
     LaunchedEffect(phase.javaClass) {
-        while (true) {
+        val animating = isArmed || isRunning
+        // Complete still needs a short settle for the last shot's spring.
+        val until = if (animating) Long.MAX_VALUE else System.nanoTime() + SETTLE_NANOS
+        while (animating || System.nanoTime() < until) {
             withFrameNanos { now ->
                 when (val p = phase) {
                     is TimerPhase.Armed -> {
@@ -317,6 +323,9 @@ private fun Canvas2(norm: Float, clipping: Boolean, mark: Float) {
         )
     }
 }
+
+/** How long to keep drawing after a string ends, so springs can settle. */
+private const val SETTLE_NANOS = 700_000_000L
 
 fun formatClock(sec: Double): String {
     val whole = floor(sec).toInt()

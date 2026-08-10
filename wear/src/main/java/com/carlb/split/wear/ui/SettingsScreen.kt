@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -29,8 +30,16 @@ import com.carlb.split.wear.timer.TimerUiState
  * which hand-rolled equivalents do not.
  */
 @Composable
-fun SettingsScreen(state: TimerUiState, onConfigChange: (TimerConfig) -> Unit) {
+fun SettingsScreen(state: TimerUiState, onConfigChange: (TimerConfig) -> Unit, onHoldMic: (Boolean) -> Unit = {}) {
     val cfg = state.config
+
+    // The level meter is the whole point of this screen, so it needs the mic --
+    // but only while the screen is actually on. Leaving it open afterwards is
+    // what used to keep a 48 kHz capture running all session.
+    DisposableEffect(Unit) {
+        onHoldMic(true)
+        onDispose { onHoldMic(false) }
+    }
     val listState = rememberTransformingLazyColumnState()
 
     ScreenScaffold(scrollState = listState) { contentPadding ->

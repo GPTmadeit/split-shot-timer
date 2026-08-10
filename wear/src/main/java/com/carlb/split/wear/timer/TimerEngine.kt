@@ -110,6 +110,26 @@ class TimerEngine(
         _state.value = _state.value.copy(phoneConnected = connected)
     }
 
+    /**
+     * Who currently needs the microphone.
+     *
+     * The mic used to be opened when the app launched and held until it closed,
+     * which meant a 48 kHz capture plus a max-priority DSP thread ran the whole
+     * time the watch sat on READY doing nothing. Now it is held only while a
+     * string is live, or while the calibration meter is on screen.
+     */
+    private val micHolders = mutableSetOf<String>()
+
+    @Synchronized
+    fun holdMic(tag: String) {
+        if (micHolders.add(tag) && micHolders.size == 1) openMic()
+    }
+
+    @Synchronized
+    fun releaseMic(tag: String) {
+        if (micHolders.remove(tag) && micHolders.isEmpty()) closeMic()
+    }
+
     /** Bring up the mic. Must be called while the app is foregrounded. */
     fun openMic(): Boolean {
         if (_state.value.micReady) return true
@@ -148,6 +168,7 @@ class TimerEngine(
 
     fun arm() {
         cancelJobs()
+        holdMic(HOLD_TIMER)
         shots.clear()
         rejected = 0
         val cfg = _state.value.config
@@ -244,6 +265,9 @@ class TimerEngine(
             if (drill.hasGoal) scope.launch(Dispatchers.Default) { signal.verdict(met) }
 
             val repeat = _state.value.config.autoRepeatSec
+            // Auto-repeat re-arms in a moment, so keep the mic warm rather than
+            // tearing down AudioRecord and rebuilding it seconds later.
+            if (repeat == 0) releaseMic(HOLD_TIMER)
             if (repeat > 0) {
                 repeatJob = scope.launch {
                     delay(repeat * 1000L)
@@ -251,6 +275,7 @@ class TimerEngine(
                 }
             }
         } else {
+            releaseMic(HOLD_TIMER)
             _state.value = _state.value.copy(phase = TimerPhase.Idle)
             onLive(LiveEvent.Cancelled)
         }
@@ -258,6 +283,7 @@ class TimerEngine(
 
     fun reset() {
         cancelJobs()
+        releaseMic(HOLD_TIMER)
         shots.clear()
         rejected = 0
         _state.value = _state.value.copy(
@@ -290,5 +316,6 @@ class TimerEngine(
 
     private companion object {
         const val TAG = "TimerEngine"
+        const val HOLD_TIMER = "timer"
     }
 }

@@ -220,7 +220,13 @@ private fun UpdatesRoute(updates: UpdateController, onInstall: () -> Unit) {
 @Composable
 private fun SettingsRoute(engine: TimerEngine, onConfigChange: (TimerConfig) -> Unit) {
     val state by engine.state.collectAsStateWithLifecycle()
-    SettingsScreen(state = state, onConfigChange = onConfigChange)
+    SettingsScreen(
+        state = state,
+        onConfigChange = onConfigChange,
+        onHoldMic = { hold ->
+            if (hold) engine.holdMic("calibrate") else engine.releaseMic("calibrate")
+        },
+    )
 }
 
 /** Shared row style for the Wear lists, so every screen matches. */
