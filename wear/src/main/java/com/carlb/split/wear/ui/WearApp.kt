@@ -1,17 +1,12 @@
 package com.carlb.split.wear.ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -22,11 +17,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
+import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
+import androidx.wear.compose.material3.AppScaffold
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.ButtonDefaults
-import androidx.wear.compose.material3.FilledTonalButton
+import androidx.wear.compose.material3.EdgeButton
+import androidx.wear.compose.material3.EdgeButtonSize
 import androidx.wear.compose.material3.ListHeader
 import androidx.wear.compose.material3.MaterialTheme
+import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
@@ -46,6 +46,11 @@ private object Routes {
     const val UPDATES = "updates"
 }
 
+/**
+ * AppScaffold is the outermost Wear OS structure: it owns TimeText — the clock
+ * curved along the top bezel — and coordinates screen transitions, so every
+ * screen inherits the platform's own chrome rather than reinventing it.
+ */
 @Composable
 fun WearApp(
     engine: TimerEngine,
@@ -56,22 +61,93 @@ fun WearApp(
 ) {
     val nav = rememberSwipeDismissableNavController()
     SplitTheme {
-        SwipeDismissableNavHost(navController = nav, startDestination = Routes.TIMER) {
-            composable(Routes.TIMER) { TimerRoute(engine, nav, updates) }
-            composable(Routes.MENU) { MenuRoute(engine, nav, updates, appVersion) }
-            composable(Routes.DRILLS) { DrillsRoute(engine, nav) }
-            composable(Routes.SETTINGS) { SettingsRoute(engine, onConfigChange) }
-            composable(Routes.UPDATES) {
-                val s by updates.state.collectAsStateWithLifecycle()
-                UpdateScreen(
-                    state = s,
-                    onCheck = updates::check,
-                    onDownload = updates::download,
-                    onInstall = onInstall,
-                )
+        AppScaffold {
+            SwipeDismissableNavHost(navController = nav, startDestination = Routes.TIMER) {
+                composable(Routes.TIMER) { TimerRoute(engine, nav, updates) }
+                composable(Routes.MENU) { MenuRoute(engine, nav, updates, appVersion) }
+                composable(Routes.DRILLS) { DrillsRoute(engine, nav) }
+                composable(Routes.SETTINGS) { SettingsRoute(engine, onConfigChange) }
+                composable(Routes.UPDATES) { UpdatesRoute(updates, onInstall) }
             }
         }
     }
+}
+
+/**
+ * The timer face.
+ *
+ * EdgeButton is the signature Wear OS 6 control: it hugs the bottom curve of a
+ * round display, which matches the platform and puts the largest possible
+ * target where a thumb naturally lands.
+ */
+@Composable
+private fun TimerRoute(engine: TimerEngine, nav: NavHostController, updates: UpdateController) {
+    val state by engine.state.collectAsStateWithLifecycle()
+    val up by updates.state.collectAsStateWithLifecycle()
+    val phase = state.phase
+
+    // No ScreenScaffold here on purpose: its job is the scroll indicator, and
+    // the face does not scroll. AppScaffold still supplies TimeText above, and
+    // EdgeButton carries the Wear OS 6 shape on its own.
+    Box(Modifier.fillMaxSize()) {
+        // The edge button eats the bottom of a round display, so the
+        // instrument is inset to clear it. Without this the readout sits
+        // behind the button and cannot be read while the clock runs.
+        TimerFace(
+            state = state,
+            elapsedProvider = engine::elapsedSec,
+            // Bottom only: clears the edge button. The top chip is compact
+            // enough that the readout clears it without shrinking the ring.
+            modifier = Modifier.padding(bottom = 40.dp),
+        )
+
+        // One compact chip instead of a menu button stacked above a drill
+        // label: two elements collided with the readout on a 227 dp round
+        // face, and the drill is one tap away inside the menu anyway.
+        if (phase !is TimerPhase.Running && phase !is TimerPhase.Armed) {
+            DrillChip(
+                drill = state.drill.name,
+                hasBadge = up.status is UpdateStatus.Available,
+                onClick = { nav.navigate(Routes.MENU) },
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 22.dp),
+            )
+        }
+
+        Box(Modifier.align(Alignment.BottomCenter)) {
+            when (phase) {
+                is TimerPhase.Armed -> EdgeButton(
+                    onClick = { engine.reset() },
+                    buttonSize = EdgeButtonSize.Medium,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Brass,
+                        contentColor = OnInstrument,
+                    ),
+                ) { EdgeLabel("CANCEL") }
+
+                is TimerPhase.Running -> EdgeButton(
+                    onClick = { engine.stop() },
+                    buttonSize = EdgeButtonSize.Medium,
+                    colors = ButtonDefaults.filledTonalButtonColors(),
+                ) { EdgeLabel("STOP") }
+
+                else -> EdgeButton(
+                    onClick = { engine.arm() },
+                    buttonSize = EdgeButtonSize.Medium,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = HiViz,
+                        contentColor = OnInstrument,
+                    ),
+                ) { EdgeLabel("START") }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EdgeLabel(text: String) {
+    Text(text, fontSize = 14.sp, fontWeight = FontWeight.Black, letterSpacing = 1.4.sp)
 }
 
 @Composable
@@ -83,10 +159,7 @@ private fun MenuRoute(engine: TimerEngine, nav: NavHostController, updates: Upda
         version = appVersion,
         entries = listOf(
             MenuEntry("Drill", state.drill.name) { nav.navigate(Routes.DRILLS) },
-            MenuEntry(
-                "Settings",
-                "Sensitivity, gates, start signal",
-            ) { nav.navigate(Routes.SETTINGS) },
+            MenuEntry("Settings", "Sensitivity, gates, start signal") { nav.navigate(Routes.SETTINGS) },
             MenuEntry(
                 label = "Updates",
                 detail = when (val s = up.status) {
@@ -99,224 +172,84 @@ private fun MenuRoute(engine: TimerEngine, nav: NavHostController, updates: Upda
     )
 }
 
-@Composable
-private fun TimerRoute(engine: TimerEngine, nav: NavHostController, updates: UpdateController) {
-    val state by engine.state.collectAsStateWithLifecycle()
-    val up by updates.state.collectAsStateWithLifecycle()
-    val phase = state.phase
-
-    Box(Modifier.fillMaxSize()) {
-        TimerFace(state = state, elapsedProvider = engine::elapsedSec)
-
-        // Primary action sits at the bottom of the round face, thumb-reachable.
-        Column(
-            Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 6.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            when (phase) {
-                is TimerPhase.Armed -> ActionButton("CANCEL", Brass) { engine.reset() }
-
-                is TimerPhase.Running -> ActionButton("STOP", MaterialTheme.colorScheme.surfaceContainerHigh) {
-                    engine.stop()
-                }
-
-                else -> ActionButton("START", HiViz) { engine.arm() }
-            }
-        }
-
-        // Drill name doubles as a shortcut straight into the drill picker.
-        // Hidden mid-string so nothing competes with the readout.
-        if (phase !is TimerPhase.Running && phase !is TimerPhase.Armed) {
-            Column(
-                Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 2.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                MenuButton(
-                    hasBadge = up.status is UpdateStatus.Available,
-                    onClick = { nav.navigate(Routes.MENU) },
-                )
-                Text(
-                    text = state.drill.name.uppercase(),
-                    color = Steel,
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 1.5.sp,
-                    modifier = Modifier.clickableNoRipple { nav.navigate(Routes.DRILLS) },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ActionButton(label: String, container: androidx.compose.ui.graphics.Color, onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        colors = ButtonDefaults.buttonColors(containerColor = container),
-        modifier = Modifier.fillMaxWidth(0.62f),
-    ) {
-        Text(
-            text = label,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Black,
-            letterSpacing = 1.5.sp,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-        )
-    }
-}
-
+/**
+ * TransformingLazyColumn is the Wear OS list: rows scale and fade as they
+ * approach the curved edges of the display, which keeps the focused row
+ * readable and is instantly recognisable as the platform's own list.
+ */
 @Composable
 private fun DrillsRoute(engine: TimerEngine, nav: NavHostController) {
     val state by engine.state.collectAsStateWithLifecycle()
-    val listState = rememberLazyListState()
+    val listState = rememberTransformingLazyColumnState()
 
-    LazyColumn(
-        state = listState,
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 28.dp),
-    ) {
-        item { ListHeader { Text("Drill") } }
-        items(DrillLibrary.all) { drill ->
-            val selected = drill.id == state.drill.id
-            FilledTonalButton(
-                onClick = {
-                    engine.setDrill(drill)
-                    nav.popBackStack()
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 3.dp),
-                colors = if (selected) {
-                    ButtonDefaults.filledTonalButtonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    )
-                } else {
-                    ButtonDefaults.filledTonalButtonColors()
-                },
-            ) {
-                Column(Modifier.fillMaxWidth()) {
-                    Text(
-                        drill.name,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (selected) HiViz else MaterialTheme.colorScheme.onSurface,
-                    )
-                    Text(
-                        drillSubtitle(drill),
-                        fontSize = 9.sp,
-                        color = Steel,
-                        fontFamily = FontFamily.Monospace,
-                    )
-                }
+    ScreenScaffold(scrollState = listState) { contentPadding ->
+        TransformingLazyColumn(
+            state = listState,
+            contentPadding = contentPadding,
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            item { ListHeader { Text("Drill") } }
+            items(DrillLibrary.all.size) { i ->
+                val drill = DrillLibrary.all[i]
+                WearListButton(
+                    title = drill.name,
+                    subtitle = drillSubtitle(drill),
+                    selected = drill.id == state.drill.id,
+                    onClick = {
+                        engine.setDrill(drill)
+                        nav.popBackStack()
+                    },
+                )
             }
+            item { Spacer(Modifier.height(8.dp)) }
         }
-        item { Spacer(Modifier.height(8.dp)) }
     }
+}
+
+@Composable
+private fun UpdatesRoute(updates: UpdateController, onInstall: () -> Unit) {
+    val s by updates.state.collectAsStateWithLifecycle()
+    UpdateScreen(
+        state = s,
+        onCheck = updates::check,
+        onDownload = updates::download,
+        onInstall = onInstall,
+    )
 }
 
 @Composable
 private fun SettingsRoute(engine: TimerEngine, onConfigChange: (TimerConfig) -> Unit) {
     val state by engine.state.collectAsStateWithLifecycle()
-    val cfg = state.config
-
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 28.dp),
-    ) {
-        item { ListHeader { Text("Calibrate") } }
-
-        item {
-            Column(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
-                Text("Sensitivity  ${cfg.sensitivityDb} dB", fontSize = 11.sp, color = Bone)
-                Spacer(Modifier.height(6.dp))
-                LevelMeter(
-                    levelDbfs = state.levelDbfs,
-                    clipping = state.clipping,
-                    thresholdDb = cfg.sensitivityDb,
-                    modifier = Modifier.fillMaxWidth().height(10.dp),
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    "Source ${state.sourceName} @ ${state.sampleRate} Hz",
-                    fontSize = 8.sp,
-                    color = Steel,
-                    fontFamily = FontFamily.Monospace,
-                )
-            }
-        }
-
-        item {
-            SettingRow("Less sensitive") {
-                onConfigChange(cfg.copy(sensitivityDb = (cfg.sensitivityDb + 2).coerceAtMost(-6)))
-            }
-        }
-        item {
-            SettingRow("More sensitive") {
-                onConfigChange(cfg.copy(sensitivityDb = (cfg.sensitivityDb - 2).coerceAtLeast(-52)))
-            }
-        }
-        item {
-            SettingRow(if (cfg.clipGate) "Clip gate: ON" else "Clip gate: OFF") {
-                onConfigChange(cfg.copy(clipGate = !cfg.clipGate))
-            }
-        }
-        item {
-            SettingRow(if (cfg.recoilGate) "Recoil gate: ON" else "Recoil gate: OFF") {
-                onConfigChange(cfg.copy(recoilGate = !cfg.recoilGate))
-            }
-        }
-        item {
-            SettingRow("Start: ${cfg.startSignal.replace('_', '+')}") {
-                val i = TimerConfig.SIGNALS.indexOf(cfg.startSignal)
-                onConfigChange(cfg.copy(startSignal = TimerConfig.SIGNALS[(i + 1) % TimerConfig.SIGNALS.size]))
-            }
-        }
-        item {
-            SettingRow("Delay: ${cfg.delayMode.replace('_', ' ')}") {
-                val i = TimerConfig.DELAY_MODES.indexOf(cfg.delayMode)
-                onConfigChange(cfg.copy(delayMode = TimerConfig.DELAY_MODES[(i + 1) % TimerConfig.DELAY_MODES.size]))
-            }
-        }
-        item {
-            SettingRow("Repeat: ${if (cfg.autoRepeatSec == 0) "off" else "${cfg.autoRepeatSec}s"}") {
-                val next = when (cfg.autoRepeatSec) {
-                    0 -> 5
-                    5 -> 8
-                    8 -> 12
-                    else -> 0
-                }
-                onConfigChange(cfg.copy(autoRepeatSec = next))
-            }
-        }
-        item {
-            Text(
-                if (state.phoneConnected) "Phone linked" else "Phone not in range - strings held on watch",
-                fontSize = 8.sp,
-                color = if (state.phoneConnected) Good else Steel,
-                modifier = Modifier.padding(top = 8.dp),
-            )
-        }
-    }
+    SettingsScreen(state = state, onConfigChange = onConfigChange)
 }
 
+/** Shared row style for the Wear lists, so every screen matches. */
 @Composable
-private fun SettingRow(label: String, onClick: () -> Unit) {
-    FilledTonalButton(
+fun WearListButton(title: String, subtitle: String?, selected: Boolean = false, onClick: () -> Unit) {
+    Button(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        colors = if (selected) {
+            ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+        } else {
+            ButtonDefaults.filledTonalButtonColors()
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
     ) {
-        Text(label, fontSize = 11.sp, modifier = Modifier.fillMaxWidth())
+        Column(Modifier.fillMaxWidth()) {
+            Text(title, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            if (subtitle != null) {
+                Text(
+                    subtitle,
+                    fontSize = 9.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
-
-/** Tap target without a ripple — the drill label reads as a label, not a button. */
-private fun Modifier.clickableNoRipple(onClick: () -> Unit): Modifier = this.padding(2.dp).clickable(
-    interactionSource = null,
-    indication = null,
-    onClick = onClick,
-)
