@@ -5,6 +5,7 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.SystemClock
+import android.util.Log
 import kotlin.math.abs
 import kotlin.math.sqrt
 
@@ -47,15 +48,46 @@ class RecoilGate(private val sensorManager: SensorManager) : SensorEventListener
 
     val available: Boolean get() = accel != null
 
-    fun start() {
-        val s = accel ?: return
+    /**
+     * Returns true if the sensor is actually streaming.
+     *
+     * This must never throw. It is an optional feature that ships disabled, and
+     * an optional feature has no business taking down the timer: an earlier
+     * build let a SecurityException here propagate out of the foreground
+     * service, which crash-looped the whole app on launch.
+     *
+     * SENSOR_DELAY_FASTEST is 0 microseconds, and since Android 12 any rate
+     * above 200 Hz requires HIGH_SAMPLING_RATE_SENSORS. That permission is
+     * declared in the manifest, but a device or profile can still refuse, so we
+     * fall back to a slower rate rather than give up or die.
+     */
+    fun start(): Boolean {
+        val s = accel ?: return false
         bootMinusMonotonic = SystemClock.elapsedRealtimeNanos() - System.nanoTime()
         writeIdx = 0
         filled = 0
-        sensorManager.registerListener(this, s, SensorManager.SENSOR_DELAY_FASTEST)
+
+        for (rate in intArrayOf(SensorManager.SENSOR_DELAY_FASTEST, SensorManager.SENSOR_DELAY_GAME)) {
+            val ok = runCatching { sensorManager.registerListener(this, s, rate) }
+                .onFailure { Log.w(TAG, "accelerometer at rate $rate unavailable: ${it.message}") }
+                .getOrDefault(false)
+            if (ok) {
+                running = true
+                return true
+            }
+        }
+        Log.w(TAG, "recoil gate unavailable; detection will fall back to acoustics only")
+        return false
     }
 
-    fun stop() = sensorManager.unregisterListener(this)
+    @Volatile
+    var running: Boolean = false
+        private set
+
+    fun stop() {
+        runCatching { sensorManager.unregisterListener(this) }
+        running = false
+    }
 
     override fun onSensorChanged(e: SensorEvent) {
         val m = sqrt(e.values[0] * e.values[0] + e.values[1] * e.values[1] + e.values[2] * e.values[2])
@@ -100,6 +132,7 @@ class RecoilGate(private val sensorManager: SensorManager) : SensorEventListener
     }
 
     companion object {
+        private const val TAG = "RecoilGate"
         private const val CAPACITY = 2048
 
         /** Estimated, not measured. Characterise against your own gun. */

@@ -3,6 +3,7 @@ package com.carlb.split.wear.timer
 import android.content.Context
 import android.hardware.SensorManager
 import android.media.AudioManager
+import android.util.Log
 import com.carlb.split.core.Drill
 import com.carlb.split.core.DrillLibrary
 import com.carlb.split.core.LiveEvent
@@ -42,6 +43,8 @@ data class TimerUiState(
     val sampleRate: Int = 0,
     val rejectedByRecoil: Int = 0,
     val phoneConnected: Boolean = false,
+    /** Whether the accelerometer is actually streaming for the recoil gate. */
+    val recoilReady: Boolean = false,
 )
 
 /**
@@ -77,6 +80,26 @@ class TimerEngine(
     fun setConfig(cfg: TimerConfig) {
         detector.config = ShotDetector.Config(cfg.sensitivityDb, cfg.clipGate, cfg.blankingMs)
         _state.value = _state.value.copy(config = cfg, drill = DrillLibrary.byId(cfg.drillId))
+        // Toggling the gate mid-session has to take effect without reopening
+        // the mic, so follow the setting here rather than only at openMic().
+        if (_state.value.micReady) syncRecoilSensor(cfg.recoilGate)
+    }
+
+    /**
+     * Bring the accelerometer up or down to match the setting. Never throws:
+     * if the sensor cannot be had, the gate simply reports itself unavailable
+     * and detection carries on acoustically.
+     */
+    private fun syncRecoilSensor(wanted: Boolean) {
+        runCatching {
+            if (wanted && !recoil.running) {
+                val started = recoil.start()
+                _state.value = _state.value.copy(recoilReady = started)
+            } else if (!wanted && recoil.running) {
+                recoil.stop()
+                _state.value = _state.value.copy(recoilReady = false)
+            }
+        }.onFailure { Log.w(TAG, "recoil sensor toggle failed", it) }
     }
 
     fun setDrill(d: Drill) {
@@ -90,9 +113,14 @@ class TimerEngine(
     /** Bring up the mic. Must be called while the app is foregrounded. */
     fun openMic(): Boolean {
         if (_state.value.micReady) return true
-        val ok = detector.start()
+        val ok = runCatching { detector.start() }
+            .onFailure { Log.e(TAG, "microphone unavailable", it) }
+            .getOrDefault(false)
         if (ok) {
-            recoil.start()
+            // Only spin the accelerometer if the gate is actually in use. It is
+            // off by default, and an optional feature must never be able to
+            // take the timer down with it.
+            if (_state.value.config.recoilGate) syncRecoilSensor(true)
             _state.value = _state.value.copy(
                 micReady = true,
                 sourceName = detector.sourceName,
@@ -258,5 +286,9 @@ class TimerEngine(
             is TimerPhase.Complete -> p.string.total ?: 0.0
             else -> 0.0
         }
+    }
+
+    private companion object {
+        const val TAG = "TimerEngine"
     }
 }

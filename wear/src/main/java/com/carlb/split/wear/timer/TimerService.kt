@@ -8,6 +8,7 @@ import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
 import android.os.PowerManager
+import android.util.Log
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import com.carlb.split.R
@@ -82,21 +83,41 @@ class TimerService : LifecycleService() {
             ACTION_START -> startSession()
             ACTION_STOP -> stopSession()
         }
-        return START_STICKY
+        // NOT_STICKY: a session is something the user explicitly starts by
+        // opening the app. Re-creating this service unprompted after a kill
+        // gave a crash here an infinite retry loop and made the app look like
+        // it would not launch at all.
+        return START_NOT_STICKY
     }
 
     private fun startSession() {
-        createChannel()
-        startForeground(NOTIF_ID, buildNotification())
-        if (wakeLock == null) {
-            val pm = getSystemService(PowerManager::class.java)
-            wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "split:session").apply {
-                setReferenceCounted(false)
-                acquire(4 * 60 * 60 * 1000L)
-            }
+        // Foreground status has to be established first and unconditionally --
+        // if anything below throws before startForeground(), the system kills
+        // the process for not posting a notification in time, which reads to
+        // the user as "the app does not open".
+        runCatching {
+            createChannel()
+            startForeground(NOTIF_ID, buildNotification())
+        }.onFailure {
+            Log.e(TAG, "could not enter foreground", it)
+            stopSelf()
+            return
         }
-        engine.openMic()
-        sync.refreshNodes()
+
+        runCatching {
+            if (wakeLock == null) {
+                val pm = getSystemService(PowerManager::class.java)
+                wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "split:session").apply {
+                    setReferenceCounted(false)
+                    acquire(SESSION_WAKELOCK_MS)
+                }
+            }
+        }.onFailure { Log.w(TAG, "wake lock unavailable", it) }
+
+        // Each of these is individually non-fatal. The timer is still usable
+        // without the phone link, and the UI surfaces a mic failure itself.
+        runCatching { engine.openMic() }.onFailure { Log.e(TAG, "openMic failed", it) }
+        runCatching { sync.refreshNodes() }.onFailure { Log.w(TAG, "node lookup failed", it) }
     }
 
     private fun stopSession() {
@@ -141,7 +162,9 @@ class TimerService : LifecycleService() {
     companion object {
         const val ACTION_START = "com.carlb.split.START_SESSION"
         const val ACTION_STOP = "com.carlb.split.STOP_SESSION"
+        private const val TAG = "TimerService"
         private const val CHANNEL = "range_session"
         private const val NOTIF_ID = 42
+        private const val SESSION_WAKELOCK_MS = 4L * 60 * 60 * 1000
     }
 }

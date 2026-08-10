@@ -5,6 +5,20 @@
     <uses-feature android:name="android.hardware.type.watch" />
 
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!--
+      The recoil gate samples the accelerometer with SENSOR_DELAY_FASTEST.
+      Since Android 12 any rate above 200 Hz requires this permission, and
+      without it registerListener throws SecurityException. It is a normal
+      permission: granted at install, no runtime prompt.
+
+      Lint flags this by default and is usually right, because most apps have
+      no business here. This one does: correlating a muzzle report against a
+      wrist impulse needs a window of a few milliseconds, and 200 Hz gives
+      5 ms per sample, too coarse to place the impulse inside that window.
+    -->
+    <uses-permission
+        android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS"
+        tools:ignore="HighSamplingRate" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
