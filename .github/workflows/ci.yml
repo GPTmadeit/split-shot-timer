@@ -155,37 +155,9 @@ jobs:
           target: default
           arch: x86_64
           disable-animations: true
-          script: |
-            set -e
-            ./gradlew :wear:assembleDebug :mobile:assembleDebug
-
-            check() {
-              pkg=com.carlb.split
-              apk=$1; activity=$2; label=$3
-              adb uninstall $pkg >/dev/null 2>&1 || true
-              adb install -r "$apk"
-              adb shell pm grant $pkg android.permission.RECORD_AUDIO || true
-              adb shell pm grant $pkg android.permission.POST_NOTIFICATIONS || true
-              adb logcat -c
-              adb shell am start -n "$pkg/$activity"
-              sleep 12
-              if adb logcat -d -s AndroidRuntime:E | grep -q "FATAL EXCEPTION"; then
-                echo "::error::$label crashed on launch"
-                adb logcat -d -s AndroidRuntime:E | head -40
-                exit 1
-              fi
-              if [ -z "$(adb shell pidof $pkg | tr -d '\r')" ]; then
-                echo "::error::$label process died after launch"
-                adb logcat -d | tail -60
-                exit 1
-              fi
-              echo "$label: alive after launch"
-            }
-
-            check wear/build/outputs/apk/debug/wear-debug.apk \
-                  com.carlb.split.wear.MainActivity "watch app"
-            check mobile/build/outputs/apk/debug/mobile-debug.apk \
-                  com.carlb.split.mobile.MainActivity "phone app"
+          # The action passes this to `sh -c`, which cannot handle a multi-line
+          # shell function, so the real logic lives in a script file.
+          script: ./gradlew :wear:assembleDebug :mobile:assembleDebug && ./scripts/smoke-test.sh
 
   signing:
     name: Signing key is stable
