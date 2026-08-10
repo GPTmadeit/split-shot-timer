@@ -25,6 +25,8 @@ android {
 }
 
 dependencies {
+    // FileProvider, for handing a downloaded APK to the package installer.
+    api(libs.core.ktx)
     api(libs.kotlinx.serialization)
     api(libs.kotlinx.coroutines)
 
