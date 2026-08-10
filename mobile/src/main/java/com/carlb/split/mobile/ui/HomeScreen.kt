@@ -55,7 +55,13 @@ import java.util.Date
 import java.util.Locale
 
 @Composable
-fun HomeScreen(strings: List<ShotString>, live: LiveMirror, onScore: (String, Double, String) -> Unit) {
+fun HomeScreen(
+    strings: List<ShotString>,
+    live: LiveMirror,
+    onScore: (String, Double, String) -> Unit,
+    updateAvailable: Boolean,
+    onOpenMenu: () -> Unit,
+) {
     val cs = MaterialTheme.colorScheme
     val bestDraw = strings.mapNotNull { it.first }.minOrNull()
 
@@ -64,7 +70,7 @@ fun HomeScreen(strings: List<ShotString>, live: LiveMirror, onScore: (String, Do
         contentPadding = PaddingValues(16.dp, 28.dp, 16.dp, 40.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item { Header(live) }
+        item { Header(live, updateAvailable, onOpenMenu) }
 
         item {
             AnimatedVisibility(
@@ -132,7 +138,7 @@ fun HomeScreen(strings: List<ShotString>, live: LiveMirror, onScore: (String, Do
 }
 
 @Composable
-private fun Header(live: LiveMirror) {
+private fun Header(live: LiveMirror, updateAvailable: Boolean, onOpenMenu: () -> Unit) {
     val cs = MaterialTheme.colorScheme
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
@@ -161,6 +167,8 @@ private fun Header(live: LiveMirror) {
             letterSpacing = 1.4.sp,
             color = if (connected) cs.primary else cs.onSurfaceVariant,
         )
+        Spacer(Modifier.width(10.dp))
+        MenuButton(hasBadge = updateAvailable, onClick = onOpenMenu)
     }
 }
 

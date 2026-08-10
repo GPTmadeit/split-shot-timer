@@ -8,6 +8,7 @@ import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.IBinder
+import android.util.Log
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -25,12 +26,24 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.wear.compose.material3.Text
+import com.carlb.split.BuildConfig
+import com.carlb.split.core.update.UpdateCatalog
+import com.carlb.split.core.update.UpdateController
 import com.carlb.split.wear.timer.TimerService
 import com.carlb.split.wear.ui.SplitTheme
 import com.carlb.split.wear.ui.WearApp
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+
+    private val updates by lazy {
+        UpdateController(
+            context = this,
+            scope = lifecycleScope,
+            currentVersion = BuildConfig.VERSION_NAME,
+            assetPrefix = UpdateCatalog.ASSET_WEAR,
+        )
+    }
 
     private var service by mutableStateOf<TimerService?>(null)
     private var permissionGranted by mutableStateOf(false)
@@ -81,6 +94,9 @@ class MainActivity : ComponentActivity() {
                                 svc.engine.setConfig(cfg)
                                 lifecycleScope.launch { svc.store.saveConfig(cfg) }
                             },
+                            updates = updates,
+                            onInstall = ::launchInstaller,
+                            appVersion = BuildConfig.VERSION_NAME,
                         )
                     }
                 }
@@ -99,6 +115,16 @@ class MainActivity : ComponentActivity() {
         val intent = Intent(this, TimerService::class.java).setAction(TimerService.ACTION_START)
         ContextCompat.startForegroundService(this, intent)
         bindService(Intent(this, TimerService::class.java), connection, Context.BIND_AUTO_CREATE)
+    }
+
+    /**
+     * Hands the downloaded APK to the platform installer. The system, not this
+     * app, asks the user to confirm -- there is no silent install path here.
+     */
+    private fun launchInstaller() {
+        val intent = updates.installIntent() ?: return
+        runCatching { startActivity(intent) }
+            .onFailure { Log.w("MainActivity", "no package installer available", it) }
     }
 
     override fun onDestroy() {

@@ -33,30 +33,76 @@ import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import com.carlb.split.core.DrillLibrary
 import com.carlb.split.core.TimerConfig
+import com.carlb.split.core.update.UpdateController
+import com.carlb.split.core.update.UpdateStatus
 import com.carlb.split.wear.timer.TimerEngine
 import com.carlb.split.wear.timer.TimerPhase
 
 private object Routes {
     const val TIMER = "timer"
+    const val MENU = "menu"
     const val DRILLS = "drills"
     const val SETTINGS = "settings"
+    const val UPDATES = "updates"
 }
 
 @Composable
-fun WearApp(engine: TimerEngine, onConfigChange: (TimerConfig) -> Unit) {
+fun WearApp(
+    engine: TimerEngine,
+    onConfigChange: (TimerConfig) -> Unit,
+    updates: UpdateController,
+    onInstall: () -> Unit,
+    appVersion: String,
+) {
     val nav = rememberSwipeDismissableNavController()
     SplitTheme {
         SwipeDismissableNavHost(navController = nav, startDestination = Routes.TIMER) {
-            composable(Routes.TIMER) { TimerRoute(engine, nav) }
+            composable(Routes.TIMER) { TimerRoute(engine, nav, updates) }
+            composable(Routes.MENU) { MenuRoute(engine, nav, updates, appVersion) }
             composable(Routes.DRILLS) { DrillsRoute(engine, nav) }
             composable(Routes.SETTINGS) { SettingsRoute(engine, onConfigChange) }
+            composable(Routes.UPDATES) {
+                val s by updates.state.collectAsStateWithLifecycle()
+                UpdateScreen(
+                    state = s,
+                    onCheck = updates::check,
+                    onDownload = updates::download,
+                    onInstall = onInstall,
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun TimerRoute(engine: TimerEngine, nav: NavHostController) {
+private fun MenuRoute(engine: TimerEngine, nav: NavHostController, updates: UpdateController, appVersion: String) {
     val state by engine.state.collectAsStateWithLifecycle()
+    val up by updates.state.collectAsStateWithLifecycle()
+
+    MenuScreen(
+        version = appVersion,
+        entries = listOf(
+            MenuEntry("Drill", state.drill.name) { nav.navigate(Routes.DRILLS) },
+            MenuEntry(
+                "Settings",
+                "Sensitivity, gates, start signal",
+            ) { nav.navigate(Routes.SETTINGS) },
+            MenuEntry(
+                label = "Updates",
+                detail = when (val s = up.status) {
+                    is UpdateStatus.Available -> "v${s.update.version} available"
+                    else -> "Installed v$appVersion"
+                },
+                badge = up.status is UpdateStatus.Available,
+            ) { nav.navigate(Routes.UPDATES) },
+        ),
+    )
+}
+
+@Composable
+private fun TimerRoute(engine: TimerEngine, nav: NavHostController, updates: UpdateController) {
+    val state by engine.state.collectAsStateWithLifecycle()
+    val up by updates.state.collectAsStateWithLifecycle()
     val phase = state.phase
 
     Box(Modifier.fillMaxSize()) {
@@ -80,14 +126,19 @@ private fun TimerRoute(engine: TimerEngine, nav: NavHostController) {
             }
         }
 
-        // Drill name doubles as the route into the drill picker.
+        // Drill name doubles as a shortcut straight into the drill picker.
+        // Hidden mid-string so nothing competes with the readout.
         if (phase !is TimerPhase.Running && phase !is TimerPhase.Armed) {
             Column(
                 Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = 4.dp),
+                    .padding(top = 2.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
+                MenuButton(
+                    hasBadge = up.status is UpdateStatus.Available,
+                    onClick = { nav.navigate(Routes.MENU) },
+                )
                 Text(
                     text = state.drill.name.uppercase(),
                     color = Steel,
