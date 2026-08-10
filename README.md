@@ -64,6 +64,8 @@ loudness threshold cannot.
 | **Works out of range** | Completed strings are written on the watch first and sync to the phone whenever Bluetooth returns. |
 | **Haptic start** | A wrist buzz cuts through hearing protection when a watch speaker does not. |
 | **Auto-repeat** | Re-arms itself so you can run reps without touching the watch. |
+| **In-app updates** | Both apps check this repository's releases and install a newer build, on request. |
+| **Menu** | One button on each app opens Drill, Settings and Updates. |
 
 ## Requirements
 
@@ -116,7 +118,15 @@ the other.
 
 ### Updating
 
-Later releases install straight over the top — no uninstall, settings and logged strings are kept:
+**From v0.3.0 onward you do not need a computer.** Open the menu (the three-dot button — top of
+the face on the watch, top-right on the phone), choose **Updates**, then **Check**. If a newer
+release exists you can download and install it from the device. Android shows its own
+confirmation prompt; nothing installs silently, and the app never checks on its own — only when
+you press Check.
+
+Each app updates itself: the watch fetches the watch APK, the phone fetches the phone APK.
+
+By `adb` if you prefer — settings and logged strings are kept either way:
 
 ```bash
 adb install -r split-wear-<newer-version>-debug.apk
@@ -144,7 +154,8 @@ APKs land in `wear/build/outputs/apk/debug/` and `mobile/build/outputs/apk/debug
 
 1. Open **SPLIT** on the watch and grant microphone access. It must be granted while the app is
    open — that is an Android rule for microphone foreground services, not a choice made here.
-2. Tap the drill name at the top to pick a drill. Start with **Freestyle** (no shot cap, no par).
+2. Tap the drill name at the top to pick a drill, or open the **menu** (three dots) for Drill,
+   Settings and Updates. Start with **Freestyle** (no shot cap, no par).
 3. Press **START**. The bezel fills brass and counts down a random 1–4 second delay so you
    cannot anticipate the beep.
 4. On the tone, shoot. Each detected shot burns an orange tick into the bezel and updates the
@@ -164,7 +175,7 @@ Under the clock: `DRAW` (time to first shot), `SPLIT` (live time since the last 
 
 ### Calibrating — do this before your first live string
 
-Swipe to **Settings** and watch the level meter while the range is active around you.
+Open the menu (three dots) → **Settings** and watch the level meter while the range is active around you.
 
 1. Turn **sensitivity** down until ambient range noise stops lighting the meter past the brass
    marker.
@@ -184,7 +195,7 @@ not, nothing is lost — the strings arrive when the link returns.
 
 ## Configuration
 
-All settings live on the watch, under Settings.
+All settings live on the watch: menu (three dots) → **Settings**.
 
 | Setting | Default | What it does |
 | --- | --- | --- |
@@ -231,6 +242,15 @@ meantime.
 **The browser page renders tiny, or the ring is blank.**
 Reload it. If it persists, open an issue with your browser and OS.
 
+**"Check failed" on the Updates screen.**
+"No internet connection" means the device has no route out — a watch on Bluetooth-only may have
+none of its own. "GitHub rate limit reached" resolves itself in an hour; unauthenticated API
+calls are limited per IP. You can always update by `adb` instead.
+
+**Android blocks the install after downloading.**
+Sideloaded installs need "install unknown apps" allowed for SPLIT. Android prompts for this the
+first time; if you declined, re-enable it in system settings for this app.
+
 **`INSTALL_FAILED_UPDATE_INCOMPATIBLE` when installing.**
 You have v0.1.0 or v0.2.0 installed, which used a different signing key. Uninstall the old
 version first — `adb uninstall com.carlb.split` — then install again. Updates from v0.2.1 onward
@@ -266,8 +286,18 @@ It does not. The microphone foreground service can only be started while the app
 it stops when you leave. There is no background listening.
 
 **Does it record or upload audio?**
-No. Audio is analysed sample-by-sample in memory and discarded. Nothing is written to disk and
-there is no network code in either app.
+No. Audio is analysed sample-by-sample in memory and discarded, and nothing is written to disk.
+
+**So what is the network permission for?**
+Only the update check, added in v0.3.0, and only when you press Check. It is an unauthenticated
+request to this repository's public release list — nothing about you, your settings or your
+shooting is ever sent. There is no background poller and no telemetry. Full detail in
+[SECURITY.md](SECURITY.md).
+
+**Can it install an update without asking me?**
+No. The app downloads the APK and hands it to Android's package installer, which shows the
+system's own confirmation. `REQUEST_INSTALL_PACKAGES` lets an app ask; it never lets one install
+unattended.
 
 **Why is the release a pre-release?**
 Because nothing has been tested on hardware. See [Status](#status-and-honest-limitations).
@@ -282,7 +312,7 @@ No. Use a certified timer. This is a practice tool.
 Three modules:
 
 ```
-core/     models and the watch↔phone wire contract  (pure Kotlin, unit tested)
+core/     models, wire contract, update logic  (pure Kotlin, 60 unit tests)
 wear/     the instrument: mic, tone, clock, state machine
 mobile/   the replica: receiver, log, analysis
 docs/     browser prototype and diagrams
@@ -333,7 +363,7 @@ platform 37 ships — that failure is the intended signal, not a broken pipeline
 
 ## Status and honest limitations
 
-`./gradlew build` passes clean: both modules compile for debug and release, **42 unit tests**
+`./gradlew build` passes clean: both modules compile for debug and release, **60 unit tests**
 pass, and Android Lint reports no issues on `:wear` or `:mobile`. Manifests are verified against
 the packaged APKs. CI runs all of this on every push.
 

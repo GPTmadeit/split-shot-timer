@@ -21,7 +21,7 @@ Three consequences follow, and they shape the whole design:
 ## Module layout
 
 ```
-core/     pure Kotlin: models, statistics, the wire contract   (42 unit tests)
+core/     pure Kotlin: models, statistics, wire contract, updates  (60 unit tests)
 wear/     the instrument                                        com.carlb.split
 mobile/   the replica                                           com.carlb.split
 docs/     browser prototype, diagrams
@@ -150,6 +150,19 @@ Motion is physics, not duration curves:
 The ring auto-rescales (5 s → 10 s → 20 s) as a string runs long. On rescale the envelope is
 folded in half so the trace keeps lining up with the ticks.
 
+## Updates
+
+`core/update/` holds the whole feature, shared by both apps so there is one place for it to be
+wrong. `Update.kt` is pure Kotlin — release parsing and version comparison, both unit tested.
+`UpdateClient` does the I/O; `UpdateController` drives the UI state.
+
+One detail worth recording: the check reads `/releases`, **not** `/releases/latest`. Every
+release of this project is a pre-release, and `/releases/latest` excludes those — using it would
+report "no updates" forever. There is a test pinning that behaviour.
+
+Installation is deliberately not automatic. The APK goes to app-private cache, is exposed through
+a `FileProvider` one-shot grant, and is handed to the platform installer, which asks the user.
+
 ## Storage
 
 DataStore with kotlinx-serialization on both sides — no Room, no KSP, no code generation. A shot
@@ -157,8 +170,11 @@ log is a small append-mostly list; a database would be more moving parts for no 
 
 ## Things deliberately not done
 
-- **No network code.** Neither app requests `INTERNET`. There is no telemetry and no audio
-  retention; samples are analysed in memory and discarded.
+- **No telemetry, ever.** The one piece of networking (added in v0.3.0) is the update check,
+  and it is outbound-read-only against a compile-time-fixed GitHub URL. No audio retention;
+  samples are analysed in memory and discarded.
+- **No background update polling.** The check runs when the user presses Check and at no other
+  time. An app that phones home on a schedule is a different kind of app.
 - **No Room/KSP.** See above.
 - **No ktlint Gradle plugin.** Formatting is enforced by the ktlint CLI in CI, which keeps the
   build graph smaller and gives the same check locally.

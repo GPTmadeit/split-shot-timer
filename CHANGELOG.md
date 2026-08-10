@@ -10,6 +10,50 @@ change in any minor release.
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-08-10
+
+Both apps can now update themselves from this repository's releases, and both gained a menu.
+
+> [!IMPORTANT]
+> **This release adds network access.** Until now neither app requested `INTERNET`, and
+> `SECURITY.md` stated that as a guarantee. In-app updates required changing it. The scope is
+> narrow — an unauthenticated `GET` to this repository's public release list, only when you press
+> **Check**, with nothing uploaded — and [SECURITY.md](SECURITY.md) now describes exactly what
+> changed rather than glossing over it.
+
+### Added
+
+- **In-app updates, on watch and phone.** Menu → Updates → Check. If a newer release exists you
+  can download and install it from the device. Each app fetches its own APK. Android's package
+  installer shows its own confirmation; nothing installs silently, and there is no background
+  poller or check-on-launch.
+- **A menu button on both apps** — three dots, top of the face on the watch and top-right on the
+  phone — housing Drill, Settings and Updates, with room for more. It carries a dot when an
+  update is waiting.
+- **18 more unit tests** (60 total) covering version ordering and release selection: that `0.10.0`
+  beats `0.9.0` rather than losing a string comparison, that a pre-release sorts below the same
+  release, that each app is offered its own asset, that drafts are skipped, and that a failed
+  lookup reports a failure rather than a reassuring "up to date".
+
+### Fixed
+
+- **Settings was unreachable.** The route existed in the navigation graph but nothing ever
+  navigated to it, so every setting — sensitivity, the gates, start signal, auto-repeat — was
+  inaccessible from a running app. The menu fixes this.
+
+### Changed
+
+- The Updates screen distinguishes **"Not checked yet"** from **"Up to date"**. Defaulting to
+  "up to date" before any check has run states something the app has not verified.
+
+### Security
+
+- `INTERNET`, `ACCESS_NETWORK_STATE` and `REQUEST_INSTALL_PACKAGES` added, each documented in
+  `SECURITY.md` with the reason. Endpoints are fixed at compile time; there is no
+  user-supplied or configurable URL in the codebase.
+- Downloaded APKs go to app-private cache and reach the installer through a `FileProvider`
+  one-shot read grant, never world-readable storage.
+
 ## [0.2.1] — 2026-08-09
 
 The watch app did not open. It does now, and releases can finally install over
@@ -136,7 +180,8 @@ First pre-release.
 - `compileSdk` pinned at 36 with dependencies held back to match, because platform 37 is not yet
   published.
 
-[Unreleased]: https://github.com/GPTmadeit/split-shot-timer/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/GPTmadeit/split-shot-timer/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/GPTmadeit/split-shot-timer/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/GPTmadeit/split-shot-timer/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/GPTmadeit/split-shot-timer/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/GPTmadeit/split-shot-timer/releases/tag/v0.1.0
