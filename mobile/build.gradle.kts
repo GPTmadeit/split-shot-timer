@@ -14,8 +14,20 @@ android {
         minSdk = 29
         targetSdk = 36
         // Must increase on every published build or devices reject the upgrade.
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.2.1"
+    }
+
+    signingConfigs {
+        // Must be the SAME key as :wear -- both apps share an applicationId, so
+        // a mismatch would make them uninstallable alongside each other. See
+        // the note in wear/build.gradle.kts: this key is deliberately public.
+        getByName("debug") {
+            storeFile = rootProject.file("signing/split-debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
     }
 
     buildTypes {

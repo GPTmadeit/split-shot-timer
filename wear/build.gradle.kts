@@ -16,8 +16,26 @@ android {
         minSdk = 30
         targetSdk = 36
         // Must increase on every published build or devices reject the upgrade.
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.2.1"
+    }
+
+    signingConfigs {
+        // A fixed, committed debug key. Without this, AGP generates a throwaway
+        // ~/.android/debug.keystore per machine -- so a CI-built release is
+        // signed differently every run and Android refuses to install it over
+        // the previous version ("signatures do not match"). Pinning it is what
+        // makes updates from the GitHub releases page actually work.
+        //
+        // This is NOT a secret and grants no authenticity: the credentials are
+        // the Android SDK's own well-known debug constants and the keystore is
+        // in the repo. Verify downloads against SHA256SUMS.txt instead.
+        getByName("debug") {
+            storeFile = rootProject.file("signing/split-debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
     }
 
     buildTypes {

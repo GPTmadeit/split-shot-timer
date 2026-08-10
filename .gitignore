@@ -6,6 +6,11 @@
 # ---------------------------------------------------------------------------
 *.jks
 *.keystore
+# ...except the deliberately-public sideload debug key. It exists so every
+# build signs identically and releases can install over each other. It is not
+# a secret: the credentials are the Android SDK's standard debug constants and
+# it confers no authenticity. A real release key must never be committed.
+!signing/split-debug.keystore
 *.p12
 *.pfx
 *.pem
