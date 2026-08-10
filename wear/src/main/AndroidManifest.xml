@@ -5,6 +5,18 @@
     <uses-feature android:name="android.hardware.type.watch" />
 
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!--
+      Used only by the Updates screen, and only when the user taps Check. It
+      reaches api.github.com and the release CDN for this one repository. No
+      telemetry, no analytics, and nothing about you or your shooting ever
+      leaves the watch. See SECURITY.md.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Hands a downloaded APK to the system installer, which always asks the
+         user to confirm. Nothing installs silently. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <!--
       The recoil gate samples the accelerometer with SENSOR_DELAY_FASTEST.
       Since Android 12 any rate above 200 Hz requires this permission, and
@@ -56,6 +68,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.updates"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/update_paths" />
+        </provider>
 
         <service
             android:name="com.carlb.split.wear.timer.TimerService"

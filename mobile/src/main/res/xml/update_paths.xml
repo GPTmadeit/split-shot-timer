@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Only the downloaded APK is ever exposed, and only to the package
+         installer via a one-shot read grant. -->
+    <cache-path name="updates" path="updates/" />
+</paths>

@@ -16,8 +16,8 @@ android {
         minSdk = 30
         targetSdk = 36
         // Must increase on every published build or devices reject the upgrade.
-        versionCode = 3
-        versionName = "0.2.1"
+        versionCode = 4
+        versionName = "0.3.0"
     }
 
     signingConfigs {
@@ -53,7 +53,11 @@ android {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         }
     }
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        // VERSION_NAME, so the updater can compare against itself.
+        buildConfig = true
+    }
 }
 
 dependencies {
