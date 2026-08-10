@@ -16,8 +16,8 @@ android {
         minSdk = 30
         targetSdk = 36
         // Must increase on every published build or devices reject the upgrade.
-        versionCode = 4
-        versionName = "0.3.0"
+        versionCode = 5
+        versionName = "0.4.0"
     }
 
     signingConfigs {

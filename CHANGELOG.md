@@ -10,6 +10,45 @@ change in any minor release.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-10
+
+Both apps now look like they belong on their platform instead of wearing a
+custom skin.
+
+### Changed
+
+- **The watch is rebuilt on native Wear OS 6 structure.** `AppScaffold` supplies
+  `TimeText` — the clock curved along the top bezel. The primary action is an
+  `EdgeButton`, the control that hugs the bottom curve of a round display and is
+  the single most recognisable Wear OS 6 element. Lists are
+  `TransformingLazyColumn`, so rows scale and fade toward the curved edges the
+  way every system list does. Settings uses the platform `Slider` and
+  `SwitchButton` rather than rows of buttons imitating them, which also brings
+  proper touch targets and rotary-crown behaviour.
+- **The watch follows the active watch face.** `dynamicColorScheme` derives the
+  chrome palette from whatever face is in use, with the previous gunmetal scheme
+  as fallback where no dynamic source exists.
+- **The phone is stock Android.** Material You dynamic colour on Android 12+, so
+  the app takes its palette from the wallpaper; a real `TopAppBar` that responds
+  to scroll; `Scaffold` owning the window insets edge to edge. The hand-built
+  schemes remain the fallback for Android 10 and 11.
+- The watch's menu button and drill label merged into one compact chip. Two
+  stacked elements collided with the readout on a 227 dp round face, and the
+  drill is one tap away inside the menu.
+
+### Fixed
+
+- The edge button no longer covers the readout, and its label no longer inherits
+  a low-contrast `onPrimary` from the dynamic palette while sitting on the fixed
+  instrument orange.
+
+### Note on colour
+
+Chrome follows the system; the **instrument does not**. Shot ticks, the running
+clock, the standby arc and the start button keep fixed high-contrast colours,
+because a wallpaper- or watch-face-derived pair can easily be low contrast and
+these have to stay readable in sunlight with the display dimmed.
+
 ## [0.3.0] — 2026-08-10
 
 Both apps can now update themselves from this repository's releases, and both gained a menu.
@@ -180,7 +219,8 @@ First pre-release.
 - `compileSdk` pinned at 36 with dependencies held back to match, because platform 37 is not yet
   published.
 
-[Unreleased]: https://github.com/GPTmadeit/split-shot-timer/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/GPTmadeit/split-shot-timer/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/GPTmadeit/split-shot-timer/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/GPTmadeit/split-shot-timer/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/GPTmadeit/split-shot-timer/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/GPTmadeit/split-shot-timer/compare/v0.1.0...v0.2.0

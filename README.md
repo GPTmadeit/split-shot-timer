@@ -66,6 +66,7 @@ loudness threshold cannot.
 | **Auto-repeat** | Re-arms itself so you can run reps without touching the watch. |
 | **In-app updates** | Both apps check this repository's releases and install a newer build, on request. |
 | **Menu** | One button on each app opens Drill, Settings and Updates. |
+| **Native to each platform** | Wear OS 6 structure on the watch (TimeText, EdgeButton, transforming lists); stock Android with Material You on the phone. |
 
 ## Requirements
 

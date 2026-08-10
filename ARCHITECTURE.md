@@ -132,6 +132,21 @@ through ambient mode, so the watch keeps timing with the display dimmed.
 
 ## Rendering
 
+### Platform-native chrome, fixed instrument
+
+Both apps use their platform's own structure. On the watch that is `AppScaffold`
+(which owns `TimeText`), `ScreenScaffold`, `EdgeButton` for the primary action
+and `TransformingLazyColumn` for lists. On the phone it is `TopAppBar` with
+scroll behaviour, `Scaffold`-owned insets, and Material You dynamic colour.
+
+Colour is split deliberately. **Chrome follows the system** — the watch face on
+Wear OS 6, the wallpaper on Android 12+ — so the app looks like it belongs on
+the device. **The instrument does not.** Shot ticks, the running clock, the
+standby arc and the start button keep fixed high-contrast values, because a
+derived palette can land on a low-contrast pair and these have to be readable
+in sunlight at a glance. `OnInstrument` exists for exactly this: text sitting on
+the fixed orange cannot take `onPrimary` from a dynamic scheme.
+
 The bezel is the instrument. The acoustic envelope draws inward from the band and each detected
 shot burns a tick outward at its angular position in the string, so by the end of a run the ring
 *is* the string — readable without parsing digits.
