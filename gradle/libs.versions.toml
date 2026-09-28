@@ -14,8 +14,8 @@ compose = "1.11.4"
 # 1.4.0 stable compiles MaterialExpressiveTheme / MotionScheme as `internal`,
 # so the Expressive API is not reachable there. alpha18 is the newest build that
 # exposes it publicly AND still allows compileSdk 36. Revisit once 37 ships.
-material3 = "1.5.0-alpha18"
-wearCompose = "1.6.2"
+material3 = "1.5.0-alpha29"
+wearCompose = "1.7.0"
 wearToolingPreview = "1.0.0"
 graphicsShapes = "1.1.0"
 playServicesWearable = "20.0.1"
